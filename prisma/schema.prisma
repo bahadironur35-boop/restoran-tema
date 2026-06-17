@@ -8,16 +8,41 @@ datasource db {
 }
 
 model Rezervasyon {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String
-  phone     String
-  date      String
-  time      String
-  guests    Int
-  notes     String?
-  status    String   @default("bekliyor")
-  createdAt DateTime @default(now())
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String
+  phone      String
+  date       String
+  time       String
+  guests     Int
+  notes      String?
+  status     String    @default("bekliyor")
+  createdAt  DateTime  @default(now())
+  musteriId  Int?
+  musteri    Musteri?  @relation(fields: [musteriId], references: [id])
+}
+
+model Musteri {
+  id           Int            @id @default(autoincrement())
+  name         String
+  email        String         @unique
+  phone        String?
+  dogumGunu    String?        // YYYY-MM-DD
+  vip          Boolean        @default(false)
+  notlar       String?
+  createdAt    DateTime       @default(now())
+  rezervasyonlar Rezervasyon[]
+  ziyaretler   MusteriZiyaret[]
+}
+
+model MusteriZiyaret {
+  id         Int      @id @default(autoincrement())
+  musteriId  Int
+  musteri    Musteri  @relation(fields: [musteriId], references: [id])
+  tarih      String
+  kisiSayisi Int
+  not        String?
+  createdAt  DateTime @default(now())
 }
 
 model MenuItem {
