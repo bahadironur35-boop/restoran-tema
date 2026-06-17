@@ -44,3 +44,20 @@ model Ayar {
   key   String @unique
   value String
 }
+
+model Masa {
+  id       Int          @id @default(autoincrement())
+  no       Int          @unique
+  kapasite Int          @default(4)
+  aktif    Boolean      @default(true)
+  talepler MasaTalebi[]
+}
+
+model MasaTalebi {
+  id        Int      @id @default(autoincrement())
+  masaId    Int
+  masa      Masa     @relation(fields: [masaId], references: [id])
+  tip       String   // garson | hesap
+  durum     String   @default("bekliyor") // bekliyor | tamam
+  createdAt DateTime @default(now())
+}
