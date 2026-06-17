@@ -35,6 +35,27 @@ model Musteri {
   ziyaretler   MusteriZiyaret[]
 }
 
+model StokItem {
+  id        Int            @id @default(autoincrement())
+  name      String
+  birim     String         @default("adet") // adet | kg | litre | gr | ml
+  miktar    Float          @default(0)
+  minMiktar Float          @default(5)
+  kategori  String         @default("Malzeme") // Malzeme | İçecek | Ambalaj | Temizlik
+  createdAt DateTime       @default(now())
+  hareketler StokHareket[]
+}
+
+model StokHareket {
+  id          Int       @id @default(autoincrement())
+  stokItemId  Int
+  stokItem    StokItem  @relation(fields: [stokItemId], references: [id], onDelete: Cascade)
+  tip         String    // giris | cikis
+  miktar      Float
+  aciklama    String?
+  createdAt   DateTime  @default(now())
+}
+
 model MusteriZiyaret {
   id         Int      @id @default(autoincrement())
   musteriId  Int

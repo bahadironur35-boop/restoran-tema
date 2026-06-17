@@ -11,6 +11,7 @@ const navItems = [
   { href: "/admin/menu", label: "Menü Yönetimi", icon: "🍽️" },
   { href: "/admin/galeri", label: "Galeri", icon: "🖼️" },
   { href: "/admin/crm", label: "Müşteri CRM", icon: "👥" },
+  { href: "/admin/stok", label: "Stok Takibi", icon: "📦" },
   { href: "/admin/ayarlar", label: "Ayarlar", icon: "⚙️" },
 ];
 
