@@ -46,11 +46,34 @@ model Ayar {
 }
 
 model Masa {
-  id       Int          @id @default(autoincrement())
-  no       Int          @unique
-  kapasite Int          @default(4)
-  aktif    Boolean      @default(true)
-  talepler MasaTalebi[]
+  id        Int          @id @default(autoincrement())
+  no        Int          @unique
+  kapasite  Int          @default(4)
+  aktif     Boolean      @default(true)
+  talepler  MasaTalebi[]
+  siparisler Siparis[]
+}
+
+model Siparis {
+  id        Int           @id @default(autoincrement())
+  masaId    Int
+  masa      Masa          @relation(fields: [masaId], references: [id])
+  durum     String        @default("bekliyor") // bekliyor | hazirlaniyor | hazir | teslim
+  notlar    String?
+  items     SiparisItem[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model SiparisItem {
+  id         Int     @id @default(autoincrement())
+  siparisId  Int
+  siparis    Siparis @relation(fields: [siparisId], references: [id], onDelete: Cascade)
+  menuItemId Int
+  name       String
+  price      String
+  adet       Int     @default(1)
+  not        String?
 }
 
 model MasaTalebi {

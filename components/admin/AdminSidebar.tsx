@@ -6,6 +6,8 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
   { href: "/admin/rezervasyonlar", label: "Rezervasyonlar", icon: "📅" },
   { href: "/admin/masalar", label: "Masa & QR", icon: "🪑" },
+  { href: "/admin/pos", label: "POS — Sipariş Al", icon: "🛒" },
+  { href: "/admin/siparisler", label: "Siparişler", icon: "🍽️" },
   { href: "/admin/menu", label: "Menü Yönetimi", icon: "🍽️" },
   { href: "/admin/galeri", label: "Galeri", icon: "🖼️" },
   { href: "/admin/ayarlar", label: "Ayarlar", icon: "⚙️" },
