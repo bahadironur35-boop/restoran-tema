@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "admin123";
 const SESSION_COOKIE = "admin_session";
 const SESSION_VALUE = "authenticated";
 
@@ -10,7 +9,8 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export function checkPassword(password: string): boolean {
-  return password === ADMIN_PASSWORD;
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
+  return password === adminPassword;
 }
 
 export { SESSION_COOKIE, SESSION_VALUE };
