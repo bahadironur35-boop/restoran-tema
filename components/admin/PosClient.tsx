@@ -5,6 +5,7 @@ import { ShoppingCart, Trash2, Plus, Minus, Printer, CreditCard, Banknote, Utens
 type MenuItem = { id: number; name: string; price: string; category: string; desc: string; image?: string };
 type Masa = { id: number; no: number; kapasite: number };
 type SepetItem = { menuItemId: number; name: string; price: string; adet: number; not: string };
+type SendMode = "mutfak" | "odeme";
 
 const CATEGORIES = [
   { key: "Tümü", emoji: "🍽️" },
@@ -32,7 +33,8 @@ export default function PosClient() {
   const [activeCategory, setActiveCategory] = useState("Tümü");
   const [notlar, setNotlar] = useState("");
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState<SendMode | null>(null);
+  const [paket, setPaket] = useState(false);
   const [indirimPct, setIndirimPct] = useState(0);
   const [servisAktif, setServisAktif] = useState(false);
   const [showNotModal, setShowNotModal] = useState(false);
@@ -78,21 +80,43 @@ export default function PosClient() {
   const servisTutar = servisAktif ? (araToplam - indirimTutar) * SERVIS_ORANI : 0;
   const toplam = araToplam - indirimTutar + servisTutar;
 
-  const sendOrder = async () => {
-    if (!selectedMasa || sepet.length === 0) return;
+  const sendOrder = async (mode: SendMode) => {
+    if (!paket && !selectedMasa && sepet.length === 0) return;
+    if (sepet.length === 0) return;
     setSending(true);
+
+    // Sipariş oluştur (paket ise masaId yok)
     await fetch("/api/admin/siparis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ masaId: selectedMasa.id, items: sepet, notlar }),
+      body: JSON.stringify({
+        masaId: paket ? null : selectedMasa?.id,
+        items: sepet,
+        notlar: paket ? `[PAKET] ${notlar}` : notlar,
+      }),
     });
-    setSent(true);
+
+    // "Sipariş + Ödeme Al" modunda ödeme kaydı da oluştur
+    if (mode === "odeme") {
+      await fetch("/api/admin/kasa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          masaId: paket ? null : selectedMasa?.id,
+          tutar: toplam,
+          yontem: payMethod,
+          notlar: paket ? "Paket sipariş" : undefined,
+        }),
+      });
+    }
+
+    setSent(mode);
     setSepet([]);
     setNotlar("");
     setIndirimPct(0);
     setServisAktif(false);
     setSending(false);
-    setTimeout(() => setSent(false), 3000);
+    setTimeout(() => setSent(null), 3000);
   };
 
   const printReceipt = () => {
@@ -133,27 +157,43 @@ export default function PosClient() {
 
         {/* Masa seç */}
         <div className="px-5 py-3 flex items-center gap-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-card)" }}>
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Masa Seç</span>
-          <div className="flex gap-2 flex-wrap">
-            {masalar.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setSelectedMasa(m)}
-                className="w-11 h-11 rounded-xl text-sm font-bold transition-all"
-                style={selectedMasa?.id === m.id
-                  ? { backgroundColor: "#1A73E8", color: "#fff" }
-                  : { backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }
-                }
-              >
-                {m.no}
-              </button>
-            ))}
-            {masalar.length === 0 && <span className="text-sm" style={{ color: "var(--text-muted)" }}>Önce masa ekleyin</span>}
-          </div>
-          {selectedMasa && (
-            <span className="ml-auto text-sm font-medium flex items-center gap-1.5" style={{ color: "#1A73E8" }}>
+          {/* Paket toggle */}
+          <button
+            onClick={() => { setPaket(!paket); setSelectedMasa(null); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0"
+            style={paket
+              ? { backgroundColor: "#F59E0B20", border: "1.5px solid #F59E0B", color: "#F59E0B" }
+              : { backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+          >
+            📦 Paket
+          </button>
+
+          {!paket && (
+            <>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Masa</span>
+              <div className="flex gap-2 flex-wrap">
+                {masalar.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setSelectedMasa(m)}
+                    className="w-11 h-11 rounded-xl text-sm font-bold transition-all"
+                    style={selectedMasa?.id === m.id
+                      ? { backgroundColor: "#1A73E8", color: "#fff" }
+                      : { backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }
+                    }
+                  >
+                    {m.no}
+                  </button>
+                ))}
+                {masalar.length === 0 && <span className="text-sm" style={{ color: "var(--text-muted)" }}>Önce masa ekleyin</span>}
+              </div>
+            </>
+          )}
+
+          {(selectedMasa || paket) && (
+            <span className="ml-auto text-sm font-medium flex items-center gap-1.5" style={{ color: paket ? "#F59E0B" : "#1A73E8" }}>
               <Utensils size={14} />
-              Masa {selectedMasa.no} – {selectedMasa.kapasite} Kişilik
+              {paket ? "Paket / Gel-Al" : `Masa ${selectedMasa!.no} – ${selectedMasa!.kapasite} Kişilik`}
             </span>
           )}
         </div>
@@ -385,17 +425,31 @@ export default function PosClient() {
             <div className="px-4 pb-4 space-y-2">
               {sent ? (
                 <div className="rounded-xl py-3 text-center text-sm font-semibold" style={{ backgroundColor: "#22C55E20", color: "#22C55E", border: "1px solid #22C55E50" }}>
-                  Mutfaga gonderildi!
+                  {sent === "odeme" ? "Sipariş & ödeme kaydedildi ✓" : "Mutfağa gönderildi ✓"}
                 </div>
               ) : (
-                <button
-                  onClick={sendOrder}
-                  disabled={!selectedMasa || sepet.length === 0 || sending}
-                  className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-40"
-                  style={{ backgroundColor: "#22C55E" }}
-                >
-                  {sending ? "Gönderiliyor..." : "Ödeme Al & Mutfağa Gönder"}
-                </button>
+                <div className="space-y-2">
+                  {/* Mutfağa gönder — ödeme sonra */}
+                  {!paket && (
+                    <button
+                      onClick={() => sendOrder("mutfak")}
+                      disabled={(!selectedMasa && !paket) || sepet.length === 0 || sending}
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-40"
+                      style={{ backgroundColor: "var(--bg)", border: "1.5px solid #1A73E8", color: "#1A73E8" }}
+                    >
+                      {sending ? "Gönderiliyor..." : "Mutfağa Gönder"}
+                    </button>
+                  )}
+                  {/* Sipariş + Ödeme Al — tek adım */}
+                  <button
+                    onClick={() => sendOrder("odeme")}
+                    disabled={(!selectedMasa && !paket) || sepet.length === 0 || sending}
+                    className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-40"
+                    style={{ backgroundColor: "#22C55E" }}
+                  >
+                    {sending ? "İşleniyor..." : paket ? "📦 Sipariş + Ödeme Al" : "Sipariş + Ödeme Al"}
+                  </button>
+                </div>
               )}
 
               <div className="grid grid-cols-2 gap-2">

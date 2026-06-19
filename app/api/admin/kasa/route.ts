@@ -39,11 +39,17 @@ export async function POST(req: NextRequest) {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   const { masaId, tutar, yontem, notlar } = await req.json();
 
-  await prisma.$transaction([
-    prisma.odeme.create({ data: { masaId, tutar, yontem, notlar: notlar || null } }),
-    prisma.siparis.updateMany({ where: { masaId, durum: { not: "teslim" } }, data: { durum: "teslim" } }),
-    prisma.masa.update({ where: { id: masaId }, data: { durum: "bos" } }),
-  ]);
+  if (masaId) {
+    // Masalı ödeme: siparişleri kapat, masayı boşalt
+    await prisma.$transaction([
+      prisma.odeme.create({ data: { masaId, tutar, yontem, notlar: notlar || null } }),
+      prisma.siparis.updateMany({ where: { masaId, durum: { not: "teslim" } }, data: { durum: "teslim" } }),
+      prisma.masa.update({ where: { id: masaId }, data: { durum: "bos" } }),
+    ]);
+  } else {
+    // Masasız (paket/gel-al): sadece ödeme kaydı
+    await prisma.odeme.create({ data: { masaId: null, tutar, yontem: yontem || "nakit", notlar: notlar || null } });
+  }
 
   return NextResponse.json({ success: true });
 }

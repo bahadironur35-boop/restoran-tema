@@ -122,8 +122,8 @@ model Masa {
 
 model Siparis {
   id        Int           @id @default(autoincrement())
-  masaId    Int
-  masa      Masa          @relation(fields: [masaId], references: [id])
+  masaId    Int?
+  masa      Masa?         @relation(fields: [masaId], references: [id])
   durum     String        @default("bekliyor") // bekliyor | hazirlaniyor | hazir | teslim
   notlar    String?
   items     SiparisItem[]
@@ -144,7 +144,7 @@ model SiparisItem {
 
 model Odeme {
   id        Int      @id @default(autoincrement())
-  masaId    Int
+  masaId    Int?
   tutar     Float
   yontem    String   @default("nakit") // nakit | kart | havale
   notlar    String?

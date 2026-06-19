@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   const { masaId, items, notlar } = await req.json();
   const siparis = await prisma.siparis.create({
-    data: { masaId: Number(masaId), notlar, items: { create: items } },
+    data: { masaId: masaId ? Number(masaId) : null, notlar, items: { create: items } },
     include: { items: true, masa: true },
   });
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       await prisma.$transaction([
         prisma.stokItem.update({ where: { id: b.stokItemId }, data: { miktar: { decrement: miktar } } }),
         prisma.stokHareket.create({
-          data: { stokItemId: b.stokItemId, tip: "cikis", miktar, aciklama: `Sipariş #${siparis.id} — Masa ${siparis.masa.no}` },
+          data: { stokItemId: b.stokItemId, tip: "cikis", miktar, aciklama: `Sipariş #${siparis.id}${siparis.masa ? ` — Masa ${siparis.masa.no}` : " — Paket"}` },
         }),
       ]);
     }
