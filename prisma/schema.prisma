@@ -39,6 +39,16 @@ model Musteri {
   puanHareketler PuanHareket[]
 }
 
+model PushAbonelik {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  tip       String   @default("garson") // "garson" | "musteri"
+  masaId    Int?
+  createdAt DateTime @default(now())
+}
+
 model PuanHareket {
   id         Int      @id @default(autoincrement())
   musteriId  Int

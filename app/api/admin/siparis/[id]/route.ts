@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAuthenticated } from "@/lib/auth";
+import { pushGonder } from "@/lib/push";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
@@ -11,6 +12,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data: { durum },
     include: { items: true, masa: true },
   });
+
+  // Sipariş hazır olunca müşteri QR sayfasına push
+  if (durum === "hazir" && siparis.masaId) {
+    const masaNo = siparis.masa?.no ?? siparis.masaId;
+    pushGonder("musteri", {
+      title: "Siparişiniz Hazır! 🍽️",
+      body: `Masa ${masaNo} — siparişiniz servis edilmeye hazır.`,
+      url: `/masa/${siparis.masaId}`,
+    }, siparis.masaId).catch(() => {});
+  }
+
   return NextResponse.json(siparis);
 }
 

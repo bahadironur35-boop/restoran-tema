@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, use } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, ChevronRight } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, ChevronRight, Bell } from "lucide-react";
+import { usePushAbonelik } from "@/lib/usePushAbonelik";
 
 type MenuItem = { id: number; name: string; desc: string; price: string; category: string; image?: string | null; happyHourPrice?: string | null };
 type MasaInfo = { no: number; alan: string; kapasite: number } | null;
@@ -28,6 +29,7 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
   const [talepAktif, setTalepAktif] = useState(true);
   const [fiyatGoster, setFiyatGoster] = useState(true);
   const [notAktif, setNotAktif] = useState(true);
+  const { durum: pushDurum, abone } = usePushAbonelik("musteri", parseInt(id));
   const [tema, setTema] = useState({
     restaurantName: "EatOs",
     brandColor: "#C9A84C",
@@ -185,6 +187,17 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
           <span>🍽️ Siparişiniz hazır! Servis edilecek.</span>
           <button onClick={() => setSiparisHazir(false)} className="opacity-70 hover:opacity-100 text-lg leading-none">×</button>
         </div>
+      )}
+
+      {/* Push bildirim abonelik daveti */}
+      {pushDurum === "bekliyor" && (
+        <button onClick={abone}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left"
+          style={{ backgroundColor: "#1A1A1A", borderBottom: "1px solid #2A2A2A" }}>
+          <Bell size={15} style={{ color: "#C9A84C" }} />
+          <span style={{ color: "#aaa" }}>Siparişiniz hazır olunca bildirim almak ister misiniz?</span>
+          <span className="ml-auto text-xs font-semibold" style={{ color: "#C9A84C" }}>Evet →</span>
+        </button>
       )}
 
       {/* Tab bar */}

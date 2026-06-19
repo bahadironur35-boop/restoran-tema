@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, LogOut, Plus, ChevronRight, CheckCircle, Clock } from "lucide-react";
+import { Bell, LogOut, Plus, ChevronRight, CheckCircle, Clock, BellOff } from "lucide-react";
+import { usePushAbonelik } from "@/lib/usePushAbonelik";
 
 type Talep = { id: number; tip: string; createdAt: string };
 type Masa = { id: number; no: number; alan: string; durum: string; kapasite: number; talepler: Talep[] };
@@ -104,6 +105,7 @@ export default function GarsonPage() {
     router.push("/garson/login");
   };
 
+  const { durum: pushDurum, abone } = usePushAbonelik("garson");
   const dolular = masalar.filter((m) => m.durum === "dolu").length;
   const bekleyenTalep = masalar.reduce((s, m) => s + (m.talepler?.length ?? 0), 0);
 
@@ -122,6 +124,25 @@ export default function GarsonPage() {
               style={{ backgroundColor: "#EF444420", border: "1px solid #EF444440" }}>
               <Bell size={13} style={{ color: "#EF4444" }} />
               <span className="text-xs font-bold" style={{ color: "#EF4444" }}>{bekleyenTalep}</span>
+            </div>
+          )}
+          {pushDurum === "bekliyor" && (
+            <button onClick={abone} title="Push bildirim aç"
+              className="w-9 h-9 flex items-center justify-center rounded-xl"
+              style={{ backgroundColor: "#1E3A5F", border: "1px solid #3B82F640" }}>
+              <Bell size={15} style={{ color: "#3B82F6" }} />
+            </button>
+          )}
+          {pushDurum === "aktif" && (
+            <div className="w-9 h-9 flex items-center justify-center rounded-xl"
+              style={{ backgroundColor: "#16A34A20" }} title="Push bildirimler aktif">
+              <Bell size={15} style={{ color: "#22C55E" }} />
+            </div>
+          )}
+          {pushDurum === "reddedildi" && (
+            <div className="w-9 h-9 flex items-center justify-center rounded-xl"
+              style={{ backgroundColor: "#1E293B" }} title="Bildirimler reddedildi">
+              <BellOff size={15} style={{ color: "#64748B" }} />
             </div>
           )}
           <button onClick={cikis} className="w-9 h-9 flex items-center justify-center rounded-xl"
