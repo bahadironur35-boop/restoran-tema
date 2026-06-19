@@ -72,9 +72,14 @@ const BOLUMLER: Bolum[] = [
         adimlar: [
           "vercel.com'a git → 'Add New Project'",
           "GitHub reposunu seç",
-          "Environment Variables bölümüne gir:",
+          "Environment Variables bölümüne gir (zorunlular):",
           "  DATABASE_URL → Neon connection string",
           "  ADMIN_PASSWORD → işletme için güçlü şifre belirle",
+          "İsteğe bağlı env var'lar (ilgili modüller açıksa ekle):",
+          "  VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY + VAPID_SUBJECT → Web Push",
+          "  IYZICO_API_KEY + IYZICO_SECRET_KEY + IYZICO_ENV → İyzico ödemesi",
+          "  STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET → Stripe ödemesi",
+          "  ODEME_PROVIDER → iyzico veya stripe",
           "'Deploy' tıkla — ilk build ~2 dakika sürer",
           "Deploy tamamlanınca .vercel.app URL'i test et",
         ],
@@ -277,6 +282,118 @@ const BOLUMLER: Bolum[] = [
   },
   {
     no: 8,
+    baslik: "Web Push Bildirimleri (İsteğe Bağlı)",
+    ozet: "Garsonlara ve müşterilere anlık bildirim göndermek için VAPID anahtarları oluştur.",
+    renk: "#8B5CF6",
+    adimlar: [
+      {
+        baslik: "VAPID anahtarları oluştur",
+        sure: "5 dk",
+        zorunlu: false,
+        aciklama: "Web Push için gerekli anahtar çifti tek komutla oluşturulur. Her deployment için bir kez yapılır.",
+        adimlar: [
+          "Projede terminali aç",
+          "Çalıştır: node -e \"require('web-push').generateVAPIDKeys().then(k => console.log(JSON.stringify(k)))\"",
+          "Çıkan publicKey ve privateKey değerlerini kopyala",
+          "Vercel → Settings → Environment Variables'a ekle:",
+          "  VAPID_PUBLIC_KEY → publicKey değeri",
+          "  VAPID_PRIVATE_KEY → privateKey değeri",
+          "  VAPID_SUBJECT → mailto:admin@isletmedomain.com",
+          "Yeni deploy tetikle",
+        ],
+        notlar: [
+          "VAPID anahtarları bir kez oluşturulur — değiştirirsen mevcut abonelikler geçersiz olur",
+          "iOS Safari 16.4+ ve tüm modern Android tarayıcılar destekler",
+          "Garson uygulaması push için izin isteyecektir — garsonlara 'İzin Ver' demeleri gerektiğini söyle",
+        ],
+      },
+    ],
+  },
+  {
+    no: 9,
+    baslik: "Online Ödeme (İsteğe Bağlı)",
+    ozet: "Müşterilerin QR sayfasından kartla ödeme yapabilmesi için İyzico veya Stripe entegre et.",
+    renk: "#EC4899",
+    adimlar: [
+      {
+        baslik: "İyzico ile kurulum (Türkiye önerilir)",
+        sure: "1-2 gün (başvuru onayı bekleme)",
+        zorunlu: false,
+        aciklama: "İyzico Türk işletmeler için en yaygın tercih. Sandbox ortamı anında kullanılabilir, production için başvuru gerekiyor.",
+        adimlar: [
+          "iyzico.com'a git → 'Hemen Başvur' ile işletme başvurusu yap",
+          "Onay beklenirken sandbox ile test edebilirsin: sandbox.iyzipay.com",
+          "Dashboard → Ayarlar → API Bilgileri'nden anahtarları al",
+          "Vercel → Environment Variables'a ekle:",
+          "  IYZICO_API_KEY → API anahtarı",
+          "  IYZICO_SECRET_KEY → Gizli anahtar",
+          "  IYZICO_ENV → sandbox (test için) veya prod (canlı için)",
+          "  ODEME_PROVIDER → iyzico",
+          "Admin → Ayarlar → Modüller'den 'Online Ödeme (QR)' switch'ini aç",
+        ],
+        link: { label: "iyzico.com", url: "https://iyzico.com" },
+        notlar: [
+          "İyzico komisyon oranı: işlem başına %2.49 + 0.25₺ (2026 itibarıyla — güncel oran için iyzico ile iletişime geç)",
+          "Sandbox'ta test için kart numaraları: iyzico dokümantasyonunda mevcut",
+          "Başvuruda şirket belgesi, vergi levhası ve banka hesabı gerekiyor",
+        ],
+      },
+      {
+        baslik: "Stripe ile kurulum (Uluslararası)",
+        sure: "30 dk",
+        zorunlu: false,
+        aciklama: "Stripe daha hızlı kurulum sağlar ancak Türkiye'de kullanım için Stripe Atlas veya yabancı şirket gerekebilir.",
+        adimlar: [
+          "dashboard.stripe.com'a git ve hesap aç",
+          "Developers → API Keys'den Test ve Live anahtarları al",
+          "Vercel → Environment Variables'a ekle:",
+          "  STRIPE_SECRET_KEY → sk_live_... (veya test için sk_test_...)",
+          "  STRIPE_WEBHOOK_SECRET → Stripe Dashboard → Webhooks'tan al",
+          "  ODEME_PROVIDER → stripe",
+          "Stripe Dashboard → Webhooks → 'Add endpoint' ile ekle:",
+          "  URL: https://siteurl.com/api/odeme/webhook?provider=stripe",
+          "  Events: checkout.session.completed, charge.refunded",
+        ],
+        link: { label: "dashboard.stripe.com", url: "https://dashboard.stripe.com" },
+        notlar: [
+          "Stripe'ın webhook endpoint'ini test etmek için Stripe CLI kullanabilirsin",
+          "İyzico tercih ediyorsan bu adımı atla",
+        ],
+      },
+    ],
+  },
+  {
+    no: 10,
+    baslik: "Termal Yazıcı (İsteğe Bağlı)",
+    ozet: "Kasa ve POS'tan ESC/POS protokolüyle termal yazıcıya fiş yazdır.",
+    renk: "#0EA5E9",
+    adimlar: [
+      {
+        baslik: "Yazıcıyı ağa bağla ve IP ayarla",
+        sure: "15 dk",
+        zorunlu: false,
+        aciklama: "Epson TM serisi veya Star TSP serisi termal yazıcılar desteklenir. Yazıcı restoran ağında sabit IP ile çalışmalı.",
+        adimlar: [
+          "Yazıcıyı Wi-Fi veya Ethernet ile restoranın ağına bağla",
+          "Yazıcının kendi menüsünden ağ ayarlarına gir",
+          "DHCP yerine statik IP ata (örn. 192.168.1.100) — router'dan da rezerve edebilirsin",
+          "Yazıcının IP adresini bir yere not et",
+          "Admin → Ayarlar → Termal Yazıcı bölümüne gir",
+          "IP adresini ve portu gir (varsayılan port: 9100)",
+          "Kağıt genişliğini seç (58mm → 32 karakter, 80mm → 42 karakter)",
+          "Kasa'dan fiş yazdır — yazıcıya gidecek, başarısız olursa browser print açılacak",
+        ],
+        notlar: [
+          "Yazıcı ve POS aynı Wi-Fi ağında olmalı — farklı VLAN'da çalışmaz",
+          "Türkçe karakter desteği code page 857 ile sağlanıyor (Epson/Star uyumlu)",
+          "Yazıcı erişilemezse sistem otomatik browser print'e geçer — hiç fiş kesilmez diye hata vermez",
+          "Epson TM-T20III ve Star TSP143 test edilmiş modellerdir",
+        ],
+      },
+    ],
+  },
+  {
+    no: 12,
     baslik: "İnternet ve Altyapı",
     ozet: "Sistem tamamen bulut tabanlı — internet kesilirse çalışmaz. Önlem olarak çift hat şart.",
     renk: "#EF4444",
@@ -320,7 +437,7 @@ const BOLUMLER: Bolum[] = [
     ],
   },
   {
-    no: 9,
+    no: 13,
     baslik: "Canlıya Alma Testi",
     ozet: "Her şeyi kurduktan sonra gerçek bir sipariş akışını baştan sona test et.",
     renk: "#10B981",
@@ -340,6 +457,8 @@ const BOLUMLER: Bolum[] = [
           "Masanın 'Boş' durumuna döndüğünü kontrol et",
           "Rezervasyon modülü açıksa /rezervasyon sayfasından test rezervasyonu yap",
           "Admin → Raporlar'da bugünkü verinin göründüğünü doğrula",
+          "Online ödeme açıksa: QR sayfasında 'Kartla Öde' butonuna bas, sandbox ödeme tamamla, Admin → Online Ödemeler'de kaydı gör",
+          "Termal yazıcı varsa: Kasa'dan fiş yazdır, yazıcıdan çıktı al",
         ],
         notlar: [
           "Test siparişlerini sonradan silmek için doğrudan veritabanından DELETE yapabilirsin",
@@ -375,7 +494,7 @@ export default function KurulumRehberi() {
             <span className="w-2 h-2 rounded-full bg-gray-500 inline-block" />
             İsteğe bağlı
           </span>
-          <span>Toplam tahmini süre: ~2-3 saat</span>
+          <span>Zorunlu adımlar: ~2-3 saat · Tüm modüller: ~1 gün</span>
         </div>
       </div>
 
