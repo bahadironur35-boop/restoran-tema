@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSSE } from "@/lib/useSSE";
 
 type SiparisItem = { id: number; name: string; adet: number; not: string | null };
 type Siparis = {
@@ -73,13 +74,22 @@ export default function MutfakPage() {
     });
   }, []);
 
-  useEffect(() => {
-    fetchSiparisler();
-    const interval = setInterval(fetchSiparisler, 8000);
-    return () => clearInterval(interval);
-  }, [fetchSiparisler]);
+  useEffect(() => { fetchSiparisler(); }, [fetchSiparisler]);
 
-  // Süre sayacı
+  // SSE: yeni sipariş anında düşsün, bip sesi çalsın
+  useSSE("/api/events?scope=siparisler", (event, data) => {
+    if (event !== "update") return;
+    const { siparisler: yeni } = data as { siparisler: Siparis[] };
+    if (!yeni) return;
+    setSiparisler((prev) => {
+      const yeniAdet = yeni.filter((s) => s.durum === "bekliyor").length;
+      const eskiAdet = prev.filter((s) => s.durum === "bekliyor").length;
+      if (yeniAdet > eskiAdet) beep();
+      return yeni;
+    });
+  });
+
+  // Süre sayacı (elapsed timer)
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 10000);
     return () => clearInterval(t);

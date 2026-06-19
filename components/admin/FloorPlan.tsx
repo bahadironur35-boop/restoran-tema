@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSSE } from "@/lib/useSSE";
 
 type Masa = { id: number; no: number; kapasite: number; alan: string; durum: string; posX: number; posY: number };
 
@@ -28,11 +29,13 @@ export default function FloorPlan() {
     setMasalar(await res.json());
   }, []);
 
-  useEffect(() => {
-    fetchMasalar();
-    const iv = setInterval(fetchMasalar, 10000);
-    return () => clearInterval(iv);
-  }, [fetchMasalar]);
+  useEffect(() => { fetchMasalar(); }, [fetchMasalar]);
+
+  useSSE("/api/events?scope=masalar", (event, data) => {
+    if (event !== "update") return;
+    const { masalar: yeni } = data as { masalar: Masa[] };
+    if (yeni) setMasalar(yeni);
+  });
 
   const alanlar = Array.from(new Set(masalar.map((m) => m.alan))).sort();
   const goruntulenen = aktifAlan === "Tümü" ? masalar : masalar.filter((m) => m.alan === aktifAlan);

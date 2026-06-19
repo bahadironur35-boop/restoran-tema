@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSSE } from "@/lib/useSSE";
 
 type SiparisItem = { id: number; name: string; adet: number; not: string | null };
 type Siparis = {
@@ -56,14 +57,16 @@ export default function SiparislerClient() {
   }, [tarih]);
 
   useEffect(() => {
-    if (mod === "aktif") {
-      fetchAktif();
-      const iv = setInterval(fetchAktif, 8000);
-      return () => clearInterval(iv);
-    } else {
-      fetchGecmis();
-    }
+    if (mod === "aktif") fetchAktif();
+    else fetchGecmis();
   }, [mod, fetchAktif, fetchGecmis]);
+
+  // SSE: aktif modda anlık güncelleme
+  useSSE("/api/events?scope=siparisler", (event, data) => {
+    if (event !== "update" || mod !== "aktif") return;
+    const { siparisler: yeni } = data as { siparisler: Siparis[] };
+    if (yeni) setSiparisler(yeni);
+  });
 
   const updateDurum = async (siparis: Siparis, durum: string) => {
     await fetch(`/api/admin/siparis/${siparis.id}`, {

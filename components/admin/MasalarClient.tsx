@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import QRCode from "qrcode";
+import { useSSE } from "@/lib/useSSE";
 
 type Talep = { id: number; tip: string; durum: string; createdAt: string };
 type Masa = { id: number; no: number; kapasite: number; alan: string; durum: string; aktif: boolean; talepler: Talep[] };
@@ -41,11 +42,19 @@ export default function MasalarClient() {
     }
   }, [baseUrl]);
 
-  useEffect(() => {
-    fetchMasalar();
-    const interval = setInterval(fetchMasalar, 10000);
-    return () => clearInterval(interval);
-  }, [fetchMasalar]);
+  useEffect(() => { fetchMasalar(); }, [fetchMasalar]);
+
+  // SSE: masa durumu değişince anında güncelle
+  useSSE("/api/events?scope=masalar", (event, data) => {
+    if (event !== "update") return;
+    const { masalar: yeni } = data as { masalar: Masa[] };
+    if (!yeni) return;
+    setMasalar((prev) => {
+      // Sadece durum değişmişse state'i güncelle
+      const changed = yeni.some((m) => prev.find((p) => p.id === m.id)?.durum !== m.durum);
+      return changed ? prev.map((p) => { const y = yeni.find((m) => m.id === p.id); return y ? { ...p, durum: y.durum } : p; }) : prev;
+    });
+  });
 
   const addMasa = async (e: React.FormEvent) => {
     e.preventDefault();

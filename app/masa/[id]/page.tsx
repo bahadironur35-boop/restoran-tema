@@ -65,16 +65,18 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
     });
   }, [id]);
 
-  // Sipariş hazır bildirimi polling
+  // Sipariş hazır bildirimi — SSE ile anlık
   useEffect(() => {
-    const check = async () => {
-      const res = await fetch(`/api/siparis-durum?masaId=${id}`);
-      const data = await res.json();
-      setSiparisHazir(data.hazir);
-    };
-    check();
-    const iv = setInterval(check, 10000);
-    return () => clearInterval(iv);
+    const es = new EventSource("/api/events?scope=siparisler");
+    es.addEventListener("update", (e) => {
+      try {
+        const { siparisler } = JSON.parse(e.data) as { siparisler: { masaId: number | null; durum: string }[] };
+        if (!siparisler) return;
+        const hazir = siparisler.some((s) => s.masaId === Number(id) && s.durum === "hazir");
+        setSiparisHazir(hazir);
+      } catch { /* ignore */ }
+    });
+    return () => es.close();
   }, [id]);
 
   const addToCart = (item: MenuItem) => {
