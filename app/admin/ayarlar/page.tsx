@@ -161,6 +161,11 @@ const FIELDS = [
     { name: "resendApiKey", label: "Resend API Key", default: "" },
     { name: "fromEmail", label: "Gönderen E-posta", default: "noreply@lamaison.com.tr" },
   ]},
+  { section: "Termal Yazıcı", items: [
+    { name: "yaziciIp", label: "Yazıcı IP Adresi (örn. 192.168.1.100)", default: "" },
+    { name: "yaziciPort", label: "Port", default: "9100" },
+    { name: "yaziciGenislik", label: "Kağıt Genişliği (karakter)", default: "42" },
+  ]},
 ];
 
 export default function AyarlarPage() {

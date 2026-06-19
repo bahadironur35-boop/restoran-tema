@@ -132,7 +132,34 @@ export default function PosClient() {
     setTimeout(() => setSent(null), 3000);
   };
 
-  const printReceipt = () => {
+  const printReceipt = async () => {
+    const saat = new Date().toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const satirlar: string[] = [
+      "[C]EatOs",
+      `[C]${saat}`,
+      "---",
+      selectedMasa ? `[B]Masa ${selectedMasa.no}` : "[B]Paket Siparis",
+      "---",
+      ...sepet.map((s) => `[ROW]${s.adet}x ${s.name}|${formatTL(priceNum(s.price) * s.adet)}`),
+      "---",
+      `[ROW]Ara Toplam|${formatTL(araToplam)}`,
+      ...(indirimTutar > 0 ? [`[ROW]Indirim (-%${indirimPct})|-${formatTL(indirimTutar)}`] : []),
+      ...(servisTutar > 0 ? [`[ROW]Hizmet (%10)|${formatTL(servisTutar)}`] : []),
+      `[B][ROW]TOPLAM|${formatTL(toplam)}`,
+      "",
+      "[C]Tesekkurler!",
+    ];
+
+    try {
+      const res = await fetch("/api/admin/yazici", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tip: "adisyon", satirlar }),
+      });
+      if (res.ok) return;
+    } catch { /* fallback */ }
+
+    // Browser print fallback
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`<html><head><title>Adisyon</title><style>
@@ -142,16 +169,16 @@ export default function PosClient() {
       .total{font-weight:bold;font-size:1.2em}
     </style></head><body>
       <h2>EatOs</h2>
-      <p style="text-align:center">Masa ${selectedMasa?.no ?? ""}</p>
+      <p style="text-align:center">${selectedMasa ? `Masa ${selectedMasa.no}` : "Paket Sipariş"}</p>
       <hr/>
       ${sepet.map((s) => `<div class="row"><span>${s.name} x${s.adet}</span><span>${formatTL(priceNum(s.price) * s.adet)}</span></div>`).join("")}
       <hr/>
       <div class="row"><span>Ara Toplam</span><span>${formatTL(araToplam)}</span></div>
-      ${indirimTutar > 0 ? `<div class="row"><span>Indirim (%${indirimPct})</span><span>-${formatTL(indirimTutar)}</span></div>` : ""}
+      ${indirimTutar > 0 ? `<div class="row"><span>İndirim (%${indirimPct})</span><span>-${formatTL(indirimTutar)}</span></div>` : ""}
       ${servisTutar > 0 ? `<div class="row"><span>Hizmet (%10)</span><span>${formatTL(servisTutar)}</span></div>` : ""}
       <hr/>
       <div class="row total"><span>TOPLAM</span><span>${formatTL(toplam)}</span></div>
-      <p style="text-align:center;margin-top:20px">Tesekkurler!</p>
+      <p style="text-align:center;margin-top:20px">Teşekkürler!</p>
     </body></html>`);
     win.print();
   };

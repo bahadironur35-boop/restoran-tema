@@ -190,23 +190,82 @@ export default function KasaClient() {
     if (sonPay) { setBolModal(false); kapat(); }
   };
 
-  const yazdir = () => {
-    const el = fisRef.current;
-    if (!el) return;
-    const win = window.open("", "_blank", "width=320,height=600");
+  const browserPrint = () => {
+    if (!fis) return;
+    const { masa, yontem: y, notlar: n, restaurantName: rn, saat } = fis;
+    const manuelInd = hesaplaIndirim(masa.tutar);
+    const toplamInd = kuponKod && indirimTutari > 0 ? indirimTutari : manuelInd;
+    const odenecek = Math.max(0, masa.tutar - toplamInd);
+    const win = window.open("", "_blank", "width=340,height=650");
     if (!win) return;
+    const satirlar = [
+      `<div style="text-align:center;font-size:15px;font-weight:bold">${rn}</div>`,
+      `<div style="text-align:center;font-size:11px;color:#555">${saat}</div>`,
+      `<div style="border-top:1px dashed #000;margin:8px 0"></div>`,
+      `<div style="font-weight:bold">Masa ${masa.no} · ${masa.alan}</div>`,
+      `<div style="border-top:1px dashed #000;margin:8px 0"></div>`,
+      ...masa.siparisler.flatMap((s) =>
+        s.items.map((it) => {
+          const p = parseFloat(it.price.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+          return `<div style="display:flex;justify-content:space-between"><span>${it.adet}× ${it.name}</span><span>${fmt(p * it.adet)}</span></div>`;
+        })
+      ),
+      `<div style="border-top:1px dashed #000;margin:8px 0"></div>`,
+      toplamInd > 0 ? `<div style="display:flex;justify-content:space-between"><span>Ara Toplam</span><span>${fmt(masa.tutar)}</span></div>` : "",
+      toplamInd > 0 ? `<div style="display:flex;justify-content:space-between;color:#dc2626"><span>İndirim</span><span>-${fmt(toplamInd)}</span></div>` : "",
+      `<div style="display:flex;justify-content:space-between;font-weight:bold;font-size:15px"><span>TOPLAM</span><span>${fmt(odenecek)}</span></div>`,
+      `<div style="display:flex;justify-content:space-between;font-size:11px;color:#555"><span>Ödeme</span><span>${y.toUpperCase()}</span></div>`,
+      n ? `<div style="font-size:11px;color:#555;margin-top:4px">${n}</div>` : "",
+      `<div style="text-align:center;margin-top:16px;font-size:11px">Teşekkürler!</div>`,
+    ].filter(Boolean).join("");
     win.document.write(`<html><head><title>Fiş</title><style>
-      body{font-family:monospace;font-size:12px;margin:16px;color:#000}
-      h2{text-align:center;font-size:15px;margin:0 0 4px}
-      .center{text-align:center}
-      .row{display:flex;justify-content:space-between;margin:2px 0}
-      .divider{border-top:1px dashed #000;margin:8px 0}
-      .total{font-size:16px;font-weight:bold}
+      body{font-family:monospace;font-size:12px;margin:16px;color:#000;width:280px}
       @media print{body{margin:0}}
-    </style></head><body>${el.innerHTML}</body></html>`);
+    </style></head><body>${satirlar}<script>setTimeout(()=>{window.print();window.close()},300)<\/script></body></html>`);
     win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); win.close(); }, 300);
+  };
+
+  const yazdir = async () => {
+    if (!fis) return;
+    const { masa, yontem: y, notlar: n, restaurantName: rn, saat } = fis;
+    const manuelInd = hesaplaIndirim(masa.tutar);
+    const toplamInd = kuponKod && indirimTutari > 0 ? indirimTutari : manuelInd;
+    const odenecek = Math.max(0, masa.tutar - toplamInd);
+
+    const satirlar: string[] = [
+      `[C]${rn}`,
+      `[C]${saat}`,
+      "---",
+      `[B]Masa ${masa.no} - ${masa.alan}`,
+      "---",
+      ...masa.siparisler.flatMap((s) =>
+        s.items.map((it) => {
+          const p = parseFloat(it.price.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+          return `[ROW]${it.adet}x ${it.name}|${fmt(p * it.adet)}`;
+        })
+      ),
+      "---",
+      ...(toplamInd > 0 ? [
+        `[ROW]Ara Toplam|${fmt(masa.tutar)}`,
+        `[ROW]Indirim|-${fmt(toplamInd)}`,
+      ] : []),
+      `[B][ROW]TOPLAM|${fmt(odenecek)}`,
+      `[ROW]Odeme|${y.toUpperCase()}`,
+      ...(n ? [n] : []),
+      "",
+      "[C]Tesekkurler!",
+    ];
+
+    try {
+      const res = await fetch("/api/admin/yazici", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tip: "fis", satirlar }),
+      });
+      if (!res.ok) throw new Error("yazici_hata");
+    } catch {
+      browserPrint();
+    }
   };
 
   const toplamCiro = masalar.reduce((s, m) => s + m.tutar, 0);
