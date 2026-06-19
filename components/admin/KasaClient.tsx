@@ -1,11 +1,25 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CreditCard, Banknote, Building2, X, CheckCircle, Printer } from "lucide-react";
+import { CreditCard, Banknote, Building2, X, CheckCircle, Printer, Scissors } from "lucide-react";
 
 type SiparisItem = { id: number; name: string; price: string; adet: number; not: string | null };
 type Siparis = { id: number; durum: string; notlar: string | null; items: SiparisItem[] };
 type MasaHesap = { id: number; no: number; alan: string; siparisler: Siparis[]; tutar: number };
 type FisData = { masa: MasaHesap; yontem: string; notlar: string; restaurantName: string; saat: string };
+
+// Tüm ürünleri düz liste olarak döner (adet bazlı — 2× Burger → 2 ayrı satır)
+function tumUrunler(masa: MasaHesap): { key: string; name: string; price: number; sipId: number; itemId: number; idx: number }[] {
+  const list: ReturnType<typeof tumUrunler> = [];
+  for (const s of masa.siparisler) {
+    for (const item of s.items) {
+      const birimFiyat = parsePrice(item.price);
+      for (let i = 0; i < item.adet; i++) {
+        list.push({ key: `${item.id}-${i}`, name: item.name, price: birimFiyat, sipId: s.id, itemId: item.id, idx: i });
+      }
+    }
+  }
+  return list;
+}
 
 const TUM_YONTEMLER = [
   { key: "nakit",  label: "Nakit",  icon: Banknote,  color: "#16A34A", ayar: "odemeNakit" },
@@ -21,6 +35,8 @@ function parsePrice(p: string) {
   return parseFloat(p.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
 }
 
+type BolTab = "esit" | "urun";
+
 export default function KasaClient() {
   const [masalar, setMasalar]     = useState<MasaHesap[]>([]);
   const [loading, setLoading]     = useState(false);
@@ -33,6 +49,19 @@ export default function KasaClient() {
   const [fis, setFis]             = useState<FisData | null>(null);
   const [restaurantName, setRestaurantName] = useState("EatOs");
   const fisRef = useRef<HTMLDivElement>(null);
+
+  // --- Adisyon bölme state'leri ---
+  const [bolModal, setBolModal]       = useState(false);
+  const [bolTab, setBolTab]           = useState<BolTab>("esit");
+  const [bolYontem, setBolYontem]     = useState("nakit");
+  // Eşit bölme
+  const [kisiSayisi, setKisiSayisi]   = useState(2);
+  const [odenmisPay, setOdenmisPay]   = useState<number[]>([]); // ödenen pay indeksleri
+  const [payYukleniyor, setPayYukleniyor] = useState<number | null>(null);
+  // Ürün bazlı bölme
+  const [seciliUrunler, setSeciliUrunler] = useState<Set<string>>(new Set());
+  const [odenmisUrunler, setOdenmisUrunler] = useState<Set<string>>(new Set());
+  const [urunYukleniyor, setUrunYukleniyor] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/ayarlar").then((r) => r.json()).then((data) => {
@@ -82,6 +111,46 @@ export default function KasaClient() {
     setNotlar("");
     setYontem("nakit");
     fetchMasalar();
+  };
+
+  const bolAc = () => {
+    setBolTab("esit");
+    setKisiSayisi(2);
+    setOdenmisPay([]);
+    setSeciliUrunler(new Set());
+    setOdenmisUrunler(new Set());
+    setBolYontem(yontemler[0]?.key ?? "nakit");
+    setBolModal(true);
+  };
+
+  const payOde = async (payIdx: number, tutar: number, sonPay: boolean) => {
+    if (!secili) return;
+    setPayYukleniyor(payIdx);
+    await fetch("/api/admin/kasa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ masaId: secili.id, tutar, yontem: bolYontem, notlar: `Pay ${payIdx + 1}/${kisiSayisi}`, parcali: !sonPay }),
+    });
+    setOdenmisPay((p) => [...p, payIdx]);
+    setPayYukleniyor(null);
+    if (sonPay) { setBolModal(false); kapat(); }
+  };
+
+  const urunPayOde = async (sonPay: boolean) => {
+    if (!secili || seciliUrunler.size === 0) return;
+    const urunList = tumUrunler(secili);
+    const secilenler = urunList.filter((u) => seciliUrunler.has(u.key));
+    const tutar = secilenler.reduce((s, u) => s + u.price, 0);
+    setUrunYukleniyor(true);
+    await fetch("/api/admin/kasa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ masaId: secili.id, tutar, yontem: bolYontem, notlar: `Ürün bazlı pay`, parcali: !sonPay }),
+    });
+    setOdenmisUrunler((prev) => new Set([...prev, ...seciliUrunler]));
+    setSeciliUrunler(new Set());
+    setUrunYukleniyor(false);
+    if (sonPay) { setBolModal(false); kapat(); }
   };
 
   const yazdir = () => {
@@ -281,7 +350,7 @@ export default function KasaClient() {
             </div>
 
             {/* Ödeme butonu */}
-            <div className="px-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="px-6 py-4 border-t space-y-2" style={{ borderColor: "var(--border)" }}>
               {odemeAlindi ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold"
@@ -302,26 +371,246 @@ export default function KasaClient() {
                   </div>
                 </div>
               ) : (
-                <button
-                  onClick={odemeAl}
-                  disabled={odemeLoading}
-                  className="w-full py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-opacity disabled:opacity-50"
-                  style={{ backgroundColor: yontemler.find((y) => y.key === yontem)?.color ?? "#16A34A" }}
-                >
-                  {odemeLoading ? "İşleniyor..." : (
-                    <>
-                      {yontem === "nakit" && <Banknote size={16} />}
-                      {yontem === "kart"  && <CreditCard size={16} />}
-                      {yontem === "havale" && <Building2 size={16} />}
-                      {fmt(secili.tutar)} · Ödemeyi Al
-                    </>
-                  )}
-                </button>
+                <>
+                  <button
+                    onClick={odemeAl}
+                    disabled={odemeLoading}
+                    className="w-full py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-opacity disabled:opacity-50"
+                    style={{ backgroundColor: yontemler.find((y) => y.key === yontem)?.color ?? "#16A34A" }}
+                  >
+                    {odemeLoading ? "İşleniyor..." : (
+                      <>
+                        {yontem === "nakit" && <Banknote size={16} />}
+                        {yontem === "kart"  && <CreditCard size={16} />}
+                        {yontem === "havale" && <Building2 size={16} />}
+                        {fmt(secili.tutar)} · Ödemeyi Al
+                      </>
+                    )}
+                  </button>
+                  <button onClick={bolAc}
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+                    style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                    <Scissors size={14} /> Adisyonu Böl
+                  </button>
+                </>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Adisyon Bölme Modalı */}
+      {bolModal && secili && (() => {
+        const urunList = tumUrunler(secili);
+        const kalanUrunler = urunList.filter((u) => !odenmisUrunler.has(u.key));
+        const seciliToplam = urunList.filter((u) => seciliUrunler.has(u.key)).reduce((s, u) => s + u.price, 0);
+        const odenmisUrunToplam = urunList.filter((u) => odenmisUrunler.has(u.key)).reduce((s, u) => s + u.price, 0);
+        const kalanToplam = secili.tutar - odenmisUrunToplam;
+        const payBasina = kisiSayisi > 0 ? secili.tutar / kisiSayisi : 0;
+        const tumPaylarOdendi = odenmisPay.length === kisiSayisi;
+        const tumUrunlerOdendi = odenmisUrunler.size === urunList.length;
+
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
+            <div className="rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
+              style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
+
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                <div>
+                  <p className="font-bold text-base" style={{ color: "var(--text)" }}>
+                    Adisyonu Böl · Masa {secili.no}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Toplam: {fmt(secili.tutar)}</p>
+                </div>
+                <button onClick={() => setBolModal(false)}>
+                  <X size={18} style={{ color: "var(--text-muted)" }} />
+                </button>
+              </div>
+
+              {/* Tab seçici */}
+              <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+                {([["esit", "Eşit Böl"], ["urun", "Ürün Seç"]] as [BolTab, string][]).map(([key, label]) => (
+                  <button key={key} onClick={() => setBolTab(key)}
+                    className="flex-1 py-3 text-sm font-semibold transition-colors"
+                    style={bolTab === key
+                      ? { color: "#1A73E8", borderBottom: "2px solid #1A73E8" }
+                      : { color: "var(--text-muted)" }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+
+                {/* Ödeme yöntemi (her iki tab için) */}
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Ödeme Yöntemi</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {yontemler.map((y) => {
+                      const Icon = y.icon;
+                      return (
+                        <button key={y.key} onClick={() => setBolYontem(y.key)}
+                          className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"
+                          style={bolYontem === y.key
+                            ? { backgroundColor: `${y.color}20`, border: `2px solid ${y.color}`, color: y.color }
+                            : { backgroundColor: "var(--bg)", border: "2px solid transparent", color: "var(--text-muted)" }}>
+                          <Icon size={18} />
+                          <span className="text-xs font-semibold">{y.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* EŞİT BÖL */}
+                {bolTab === "esit" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Kişi sayısı:</p>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setKisiSayisi((n) => Math.max(2, n - 1))}
+                          className="w-8 h-8 rounded-lg text-lg font-bold flex items-center justify-center"
+                          style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }}>−</button>
+                        <span className="w-8 text-center font-bold text-lg" style={{ color: "var(--text)" }}>{kisiSayisi}</span>
+                        <button onClick={() => setKisiSayisi((n) => n + 1)}
+                          className="w-8 h-8 rounded-lg text-lg font-bold flex items-center justify-center"
+                          style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }}>+</button>
+                      </div>
+                      <span className="ml-auto font-bold text-lg" style={{ color: "#22C55E" }}>{fmt(payBasina)} / kişi</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {Array.from({ length: kisiSayisi }, (_, i) => {
+                        const odendi = odenmisPay.includes(i);
+                        const yukleniyor = payYukleniyor === i;
+                        const sonPay = odenmisPay.length === kisiSayisi - 1 && !odendi;
+                        return (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-xl"
+                            style={{ backgroundColor: odendi ? "#16A34A15" : "var(--bg)", border: `1px solid ${odendi ? "#16A34A40" : "var(--border)"}` }}>
+                            <div className="flex items-center gap-3">
+                              {odendi
+                                ? <CheckCircle size={16} style={{ color: "#16A34A" }} />
+                                : <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "var(--border)" }} />}
+                              <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Pay {i + 1}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm" style={{ color: odendi ? "#16A34A" : "var(--text)" }}>{fmt(payBasina)}</span>
+                              {!odendi && (
+                                <button onClick={() => payOde(i, payBasina, sonPay)}
+                                  disabled={yukleniyor}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50"
+                                  style={{ backgroundColor: yontemler.find((y) => y.key === bolYontem)?.color ?? "#1A73E8" }}>
+                                  {yukleniyor ? "..." : sonPay ? "Son Pay Al ✓" : "Al"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {tumPaylarOdendi && (
+                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold"
+                        style={{ backgroundColor: "#16A34A" }}>
+                        <CheckCircle size={16} /> Tüm Paylar Ödendi
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ÜRÜN SEÇ */}
+                {bolTab === "urun" && (
+                  <div className="space-y-3">
+                    {odenmisUrunler.size > 0 && (
+                      <p className="text-xs px-3 py-2 rounded-lg"
+                        style={{ backgroundColor: "#16A34A15", color: "#16A34A", border: "1px solid #16A34A30" }}>
+                        ✓ {odenmisUrunler.size} ürün ödendi · Kalan: {fmt(kalanToplam)}
+                      </p>
+                    )}
+
+                    {kalanUrunler.length === 0 ? (
+                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold"
+                        style={{ backgroundColor: "#16A34A" }}>
+                        <CheckCircle size={16} /> Tüm Ürünler Ödendi
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex gap-2 mb-1">
+                          <button onClick={() => setSeciliUrunler(new Set(kalanUrunler.map((u) => u.key)))}
+                            className="text-xs px-2 py-1 rounded-lg"
+                            style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                            Tümünü Seç
+                          </button>
+                          <button onClick={() => setSeciliUrunler(new Set())}
+                            className="text-xs px-2 py-1 rounded-lg"
+                            style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                            Temizle
+                          </button>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {kalanUrunler.map((u) => {
+                            const secili2 = seciliUrunler.has(u.key);
+                            return (
+                              <button key={u.key} onClick={() => {
+                                const next = new Set(seciliUrunler);
+                                secili2 ? next.delete(u.key) : next.add(u.key);
+                                setSeciliUrunler(next);
+                              }}
+                                className="w-full flex items-center justify-between p-3 rounded-xl transition-all text-left"
+                                style={{
+                                  backgroundColor: secili2 ? "#1A73E815" : "var(--bg)",
+                                  border: `1px solid ${secili2 ? "#1A73E8" : "var(--border)"}`,
+                                }}>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                                    style={{ backgroundColor: secili2 ? "#1A73E8" : "transparent", border: `2px solid ${secili2 ? "#1A73E8" : "var(--border)"}` }}>
+                                    {secili2 && <span className="text-white text-xs">✓</span>}
+                                  </div>
+                                  <span className="text-sm" style={{ color: "var(--text)" }}>{u.name}</span>
+                                </div>
+                                <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>{fmt(u.price)}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {seciliUrunler.size > 0 && (
+                      <div className="border-t pt-3 flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+                        <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+                          {seciliUrunler.size} ürün seçildi
+                        </span>
+                        <span className="font-bold" style={{ color: "#22C55E" }}>{fmt(seciliToplam)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Alt buton */}
+              {bolTab === "urun" && !tumUrunlerOdendi && seciliUrunler.size > 0 && (
+                <div className="px-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+                  {(() => {
+                    const kalanSonra = kalanUrunler.filter((u) => !seciliUrunler.has(u.key)).length;
+                    const sonPay = kalanSonra === 0;
+                    return (
+                      <button onClick={() => urunPayOde(sonPay)} disabled={urunYukleniyor}
+                        className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                        style={{ backgroundColor: yontemler.find((y) => y.key === bolYontem)?.color ?? "#1A73E8" }}>
+                        {urunYukleniyor ? "İşleniyor..." : `${fmt(seciliToplam)} · ${sonPay ? "Son Payı Al ✓" : "Bu Payı Al"}`}
+                      </button>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
