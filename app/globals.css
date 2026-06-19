@@ -1,29 +1,126 @@
 @import "tailwindcss";
 
+/* ── Design Tokens ── */
 :root {
-  --gold: #C9A84C;
-  --gold-light: #E8C96A;
-  --dark: #0F0F0F;
-  --dark-card: #1A1A1A;
-  --dark-border: #2A2A2A;
+  --bg:         #F0F4F8;
+  --bg-card:    #FFFFFF;
+  --bg-input:   #FFFFFF;
+  --border:     #E2E8F0;
+  --text:       #1A2332;
+  --text-muted: #64748B;
+  --gold:       #A07830;
+  --gold-hover: #C9A84C;
+  --blue:       #1A73E8;
+  --blue-hover: #1557B0;
+  --blue-light: #EBF3FE;
 }
 
-body {
-  background-color: #0F0F0F;
-  color: #F5F5F5;
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+input, select, textarea { color: var(--text); }
+select option { background-color: var(--bg-card); color: var(--text); }
+::placeholder { color: var(--text-muted); opacity: 1; }
+
+body { background-color: var(--bg); color: var(--text); }
+
+/* ── Utility classes ── */
+.bg-card    { background-color: var(--bg-card); }
+.bg-surface { background-color: var(--bg); }
+.bg-inp     { background-color: var(--bg-input); }
+.text-th    { color: var(--text); }
+.text-mu    { color: var(--text-muted); }
+.text-go    { color: var(--gold); }
+
+/* ── Card ── */
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
 }
 
+/* ── Input ── */
+.input-field {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-field:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+
+/* ── Buttons ── */
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--blue);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+.btn-primary:hover  { background-color: var(--blue-hover); box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.btn-secondary:hover { background-color: var(--bg); color: var(--text); }
+
+/* ── Status badges ── */
+.badge { display: inline-flex; align-items: center; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.badge-yellow  { background: #FEF9C3; color: #854D0E; }
+.badge-green   { background: #DCFCE7; color: #166534; }
+.badge-red     { background: #FEE2E2; color: #991B1B; }
+.badge-blue    { background: #DBEAFE; color: #1E40AF; }
+
+/* ── Table ── */
+.data-table { width: 100%; font-size: 0.875rem; }
+.data-table thead tr { border-bottom: 1px solid var(--border); }
+.data-table thead th { text-align: left; padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.data-table tbody tr { border-bottom: 1px solid var(--border); transition: background-color 0.1s; }
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background-color: var(--bg); }
+.data-table tbody td { padding: 0.875rem 1rem; color: var(--text); vertical-align: middle; }
+
+/* ── Sidebar nav hover ── */
+.nav-item:hover { background-color: rgba(255,255,255,0.06); }
+
+/* ── Gold button (public site) ── */
+.btn-gold {
   display: inline-block;
-  background-color: #C9A84C;
+  background-color: var(--gold);
   color: #000;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
+  border-radius: 4px;
   transition: background-color 0.2s;
   cursor: pointer;
   border: none;
 }
-
-.btn-primary:hover {
-  background-color: #E8C96A;
-}
+.btn-gold:hover { background-color: var(--gold-hover); }
