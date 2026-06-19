@@ -45,6 +45,11 @@ const SWITCH_SECTIONS = [
         label: "Stok Otomatik Düşme",
         desc: "Sipariş verildiğinde bağlı stok kalemleri otomatik azaltılsın",
       },
+      {
+        name: "paketSiparisAktif",
+        label: "Paket / Gel-Al Sipariş",
+        desc: "POS ekranında masasız paket sipariş oluşturma seçeneği görünsün",
+      },
     ],
   },
   {

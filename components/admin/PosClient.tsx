@@ -41,6 +41,7 @@ export default function PosClient() {
   const [payMethod, setPayMethod] = useState<"nakit" | "kart" | "yemek">("nakit");
   const [search, setSearch] = useState("");
   const [aktifYontemler, setAktifYontemler] = useState<string[]>(["nakit", "kart", "yemek"]);
+  const [paketAktif, setPaketAktif] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/masalar").then((r) => r.json()).then(setMasalar);
@@ -55,6 +56,7 @@ export default function PosClient() {
         setAktifYontemler(yontemler);
         setPayMethod(yontemler[0] as "nakit" | "kart" | "yemek");
       }
+      if (data.paketSiparisAktif === "false") setPaketAktif(false);
     });
   }, []);
 
@@ -158,7 +160,7 @@ export default function PosClient() {
         {/* Masa seç */}
         <div className="px-5 py-3 flex items-center gap-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-card)" }}>
           {/* Paket toggle */}
-          <button
+          {paketAktif && <button
             onClick={() => { setPaket(!paket); setSelectedMasa(null); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0"
             style={paket
@@ -166,7 +168,7 @@ export default function PosClient() {
               : { backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
           >
             📦 Paket
-          </button>
+          </button>}
 
           {!paket && (
             <>
