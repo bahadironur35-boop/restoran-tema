@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { TrendingUp, ShoppingBag, Receipt, BarChart2, Banknote, CreditCard, Building2, Wallet, Download } from "lucide-react";
+import { TrendingUp, ShoppingBag, Receipt, BarChart2, Banknote, CreditCard, Building2, Wallet, Download, FileSpreadsheet, FileCode, FileJson } from "lucide-react";
+import * as XLSX from "xlsx";
 
 type GunlukTrend   = { tarih: string; gelir: number; adet: number };
 type PopulerUrun   = { name: string; adet: number; gelir: number };
@@ -103,6 +104,94 @@ export default function RaporlarClient() {
     URL.revokeObjectURL(url);
   };
 
+  const donemLabel = ozelAralik ? `${baslangic}_${bitis}` : (PERIODS.find((p) => p.key === period)?.label ?? period);
+
+  const exportExcel = () => {
+    if (!rapor) return;
+    const wb = XLSX.utils.book_new();
+
+    // Özet sayfası
+    const ozet = [
+      ["Dönem", donemLabel],
+      ["Sipariş Geliri (₺)", rapor.toplamGelir],
+      ["Kasa Tahsilatı (₺)", rapor.kasaGelir],
+      ["Sipariş Adedi", rapor.siparisAdedi],
+      ["Ortalama Fatura (₺)", parseFloat(rapor.ortalamaFatura.toFixed(2))],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ozet), "Özet");
+
+    // Günlük trend
+    const trend = [["Tarih", "Gelir (₺)", "Sipariş Adedi"], ...rapor.gunlukTrend.map((g) => [g.tarih, g.gelir, g.adet])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trend), "Günlük Trend");
+
+    // Ürünler
+    const urunler = [["Ürün", "Adet", "Gelir (₺)"], ...rapor.populerUrunler.map((u) => [u.name, u.adet, u.gelir])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(urunler), "Ürünler");
+
+    // Masa bazlı
+    const masalar = [["Masa No", "Alan", "Gelir (₺)", "Sipariş Sayısı", "Ortalama (₺)"],
+      ...rapor.masaBaziGelir.map((m) => [m.no, m.alan, m.gelir, m.siparisSayisi, parseFloat(m.ortalama.toFixed(2))])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(masalar), "Masa Bazlı");
+
+    // Ödeme dağılımı
+    const odemeler = [["Yöntem", "İşlem Sayısı", "Tutar (₺)"], ...rapor.odemeDagilimi.map((o) => [o.yontem, o.adet, o.tutar])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(odemeler), "Ödemeler");
+
+    XLSX.writeFile(wb, `rapor_${donemLabel}.xlsx`);
+  };
+
+  const exportLogoXML = () => {
+    if (!rapor) return;
+    const simdi = new Date().toISOString();
+    const satirlar = rapor.odemeDagilimi.map((o, i) => `
+    <INVOICE_LINE>
+      <LINE_NO>${i + 1}</LINE_NO>
+      <DESCRIPTION>${o.yontem.charAt(0).toUpperCase() + o.yontem.slice(1)} Tahsilatı</DESCRIPTION>
+      <QUANTITY>${o.adet}</QUANTITY>
+      <UNIT_PRICE>${(o.tutar / (o.adet || 1)).toFixed(2)}</UNIT_PRICE>
+      <TOTAL>${o.tutar.toFixed(2)}</TOTAL>
+      <VAT_RATE>8</VAT_RATE>
+    </INVOICE_LINE>`).join("");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<LOGO_DATA>
+  <EXPORT_DATE>${simdi}</EXPORT_DATE>
+  <PERIOD>${donemLabel}</PERIOD>
+  <INVOICE>
+    <INVOICE_DATE>${new Date().toISOString().split("T")[0]}</INVOICE_DATE>
+    <TOTAL_AMOUNT>${rapor.kasaGelir.toFixed(2)}</TOTAL_AMOUNT>
+    <CURRENCY>TRY</CURRENCY>
+    <LINES>${satirlar}
+    </LINES>
+  </INVOICE>
+</LOGO_DATA>`;
+
+    const blob = new Blob([xml], { type: "application/xml;charset=utf-8;" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `logo_rapor_${donemLabel}.xml`; a.click();
+  };
+
+  const exportParasutJSON = () => {
+    if (!rapor) return;
+    const veri = {
+      meta: { kaynak: "EatOs", donem: donemLabel, olusturulma: new Date().toISOString() },
+      ozet: {
+        toplamGelir: rapor.toplamGelir,
+        kasaTahsilati: rapor.kasaGelir,
+        siparisAdedi: rapor.siparisAdedi,
+        ortalamaFatura: parseFloat(rapor.ortalamaFatura.toFixed(2)),
+      },
+      odemeler: rapor.odemeDagilimi.map((o) => ({
+        yontem: o.yontem, islemSayisi: o.adet, toplam: o.tutar,
+      })),
+      gunlukTrend: rapor.gunlukTrend,
+      populerUrunler: rapor.populerUrunler,
+    };
+    const blob = new Blob([JSON.stringify(veri, null, 2)], { type: "application/json;charset=utf-8;" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `parasut_rapor_${donemLabel}.json`; a.click();
+  };
+
   const maxGelir = rapor ? Math.max(...rapor.gunlukTrend.map((g) => g.gelir), 1) : 1;
   const maxUrun  = rapor ? Math.max(...rapor.populerUrunler.map((u) => u.adet), 1) : 1;
   const maxMasa  = rapor ? Math.max(...rapor.masaBaziGelir.map((m) => m.gelir), 1) : 1;
@@ -123,12 +212,23 @@ export default function RaporlarClient() {
             </p>
           </div>
           {rapor && (
-            <button onClick={exportCSV}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors"
-              style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
-              title="CSV olarak indir">
-              <Download size={13} /> CSV
-            </button>
+            <div className="flex items-center gap-1.5">
+              {[
+                { label: "CSV",   icon: Download,         fn: exportCSV,        title: "Excel/Numbers uyumlu" },
+                { label: "Excel", icon: FileSpreadsheet,  fn: exportExcel,      title: "Çok sayfalı .xlsx" },
+                { label: "Logo",  icon: FileCode,         fn: exportLogoXML,    title: "Logo Tiger/GO XML" },
+                { label: "JSON",  icon: FileJson,         fn: exportParasutJSON,title: "Paraşüt/Mikro API" },
+              ].map((btn) => {
+                const Icon = btn.icon;
+                return (
+                  <button key={btn.label} onClick={btn.fn} title={btn.title}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors"
+                    style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                    <Icon size={12} /> {btn.label}
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
         <div className="flex flex-col items-end gap-2">
