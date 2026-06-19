@@ -165,7 +165,7 @@ export default function SiparislerClient() {
               <div key={s.id} className={`card border-2 p-5 ${borderCls}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="text-xl font-bold" style={{ color: "var(--text)" }}>Masa {s.masa.no}</p>
+                    <p className="text-xl font-bold" style={{ color: "var(--text)" }}>{s.masa ? `Masa ${s.masa.no}` : "Paket"}</p>
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
                       style={{ backgroundColor: info.bg, color: info.color }}>
                       {info.label}

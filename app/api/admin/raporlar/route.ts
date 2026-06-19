@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
   // Masa başı gelir
   const masaMap: Record<string, { no: number; alan: string; gelir: number; siparisSayisi: number }> = {};
   for (const s of siparisler) {
-    const key = String(s.masaId);
-    if (!masaMap[key]) masaMap[key] = { no: s.masa.no, alan: s.masa.alan, gelir: 0, siparisSayisi: 0 };
+    const key = String(s.masaId ?? "paket");
+    if (!masaMap[key]) masaMap[key] = { no: s.masa?.no ?? 0, alan: s.masa?.alan ?? "Paket", gelir: 0, siparisSayisi: 0 };
     masaMap[key].siparisSayisi += 1;
     for (const item of s.items) {
       masaMap[key].gelir += parsePrice(item.price) * item.adet;

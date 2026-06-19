@@ -221,11 +221,11 @@ export default async function AdminDashboard() {
                   <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "var(--bg)" }}>
                     <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
                       style={{ backgroundColor: `${info.color}15`, color: info.color }}>
-                      {s.masa.no}
+                      {s.masa ? s.masa.no : "📦"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
-                        {s.masa.alan} · Masa {s.masa.no}
+                        {s.masa ? `${s.masa.alan} · Masa ${s.masa.no}` : "Paket"}
                       </p>
                       <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
                         {s.items.map((i) => `${i.adet}× ${i.name}`).join(", ")}

@@ -137,7 +137,7 @@ export default function MutfakPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-3xl font-bold">Masa {s.masa.no}</p>
+                    <p className="text-3xl font-bold">{s.masa ? `Masa ${s.masa.no}` : "Paket"}</p>
                     {gecikti && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-600 text-white animate-pulse">
                         GECİKİYOR
