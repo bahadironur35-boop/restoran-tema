@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, Trash2, Package, Plus, Pencil, Check, X, ChevronUp, ChevronDown, Tags } from "lucide-react";
+import { Trash2, Package, Plus, Pencil, Check, X, ChevronUp, ChevronDown, Tags } from "lucide-react";
 
 type MenuItem = {
   id: number; name: string; desc: string; price: string;
@@ -13,6 +13,76 @@ type StokLink = { id: number; stokItemId: number; miktar: number; stokItem: Stok
 
 const inputCls = "input-field";
 
+// --- Accordion kategori kartı ---
+function AccordionKategori({
+  cat, items, toggleActive, deleteItem, setStokModal,
+}: {
+  cat: string;
+  items: MenuItem[];
+  toggleActive: (id: number, active: boolean) => void;
+  deleteItem: (id: number) => void;
+  setStokModal: (item: MenuItem) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="card overflow-hidden">
+      <button
+        className="flex items-center gap-3 w-full px-6 py-4 text-left"
+        onClick={() => setOpen((p) => !p)}
+      >
+        <span className="font-semibold uppercase tracking-wider text-sm flex-1" style={{ color: "var(--text)" }}>
+          {cat}
+        </span>
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+          {items.length} öğe
+        </span>
+        <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="px-6 pb-5">
+          {items.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Bu kategoride öğe yok.</p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item) => (
+                <div key={item.id}
+                  className={`flex items-center justify-between p-3 rounded-lg ${!item.active ? "opacity-40" : ""}`}
+                  style={{ border: "1px solid var(--border)" }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate" style={{ color: "var(--text)" }}>{item.name}</p>
+                    <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
+                  </div>
+                  <div className="mx-4 text-right whitespace-nowrap">
+                    <span className="text-sm font-bold block" style={{ color: "#1A73E8" }}>{item.price}</span>
+                    {item.happyHourPrice && (
+                      <span className="text-xs font-semibold" style={{ color: "#F59E0B" }}>⚡ {item.happyHourPrice}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleActive(item.id, item.active)}
+                      className={item.active ? "badge badge-green" : "badge"}>
+                      {item.active ? "Aktif" : "Pasif"}
+                    </button>
+                    <button onClick={() => setStokModal(item)} title="Stok bağlantıları"
+                      className="p-1 rounded transition-colors hover:bg-white/5">
+                      <Package size={14} style={{ color: "var(--text-muted)" }} />
+                    </button>
+                    <button onClick={() => deleteItem(item.id)}
+                      className="text-xs px-1 transition-colors hover:text-red-400"
+                      style={{ color: "var(--text-muted)" }}>×</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Ana bileşen ---
 export default function MenuYonetim({
   items,
   initialKategoriler,
@@ -22,7 +92,6 @@ export default function MenuYonetim({
 }) {
   const router = useRouter();
 
-  // --- Kategori state ---
   const [kategoriler, setKategoriler] = useState<string[]>(initialKategoriler);
   const [katPanel, setKatPanel]       = useState(false);
   const [yeniKat, setYeniKat]         = useState("");
@@ -30,29 +99,25 @@ export default function MenuYonetim({
   const [editKat, setEditKat]         = useState<string | null>(null);
   const [editKatVal, setEditKatVal]   = useState("");
 
-  // --- Menü form state ---
   const emptyForm = { name: "", desc: "", price: "", category: kategoriler[0] ?? "", image: "", happyHourPrice: "" };
-  const [form, setForm]             = useState(emptyForm);
-  const [loading, setLoading]       = useState(false);
-  const [stokModal, setStokModal]   = useState<MenuItem | null>(null);
-  const [stoklar, setStoklar]       = useState<StokItem[]>([]);
-  const [linkler, setLinkler]       = useState<StokLink[]>([]);
-  const [secStok, setSecStok]       = useState("");
-  const [secMiktar, setSecMiktar]   = useState("1");
+  const [form, setForm]           = useState(emptyForm);
+  const [loading, setLoading]     = useState(false);
+  const [stokModal, setStokModal] = useState<MenuItem | null>(null);
+  const [stoklar, setStoklar]     = useState<StokItem[]>([]);
+  const [linkler, setLinkler]     = useState<StokLink[]>([]);
+  const [secStok, setSecStok]     = useState("");
+  const [secMiktar, setSecMiktar] = useState("1");
 
-  // Kategori değişince form.category'yi de güncelle
   useEffect(() => {
     setForm((p) => ({ ...p, category: kategoriler[0] ?? "" }));
   }, [kategoriler]);
 
-  // Stok modal
   useEffect(() => {
     if (!stokModal) return;
     fetch("/api/admin/stok").then((r) => r.json()).then(setStoklar);
     fetch(`/api/admin/menu/${stokModal.id}/stok`).then((r) => r.json()).then(setLinkler);
   }, [stokModal]);
 
-  // ---- Kategori işlemleri ----
   async function katApi(body: object) {
     const r = await fetch("/api/admin/menu/kategoriler", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -101,7 +166,6 @@ export default function MenuYonetim({
     });
   };
 
-  // ---- Menü işlemleri ----
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -155,7 +219,6 @@ export default function MenuYonetim({
     acc[cat] = items.filter((i) => i.category === cat);
     return acc;
   }, {});
-  // Kategorisiz öğeler (silinmiş/değiştirilmiş kategori adı)
   const uncategorized = items.filter((i) => !kategoriler.includes(i.category));
 
   return (
@@ -233,12 +296,10 @@ export default function MenuYonetim({
 
         {katPanel && (
           <div className="mt-4 space-y-3">
-            {/* Mevcut kategoriler */}
             <div className="space-y-2">
               {kategoriler.map((kat, idx) => (
                 <div key={kat} className="flex items-center gap-2 p-3 rounded-xl"
                   style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}>
-                  {/* Sıra butonları */}
                   <div className="flex flex-col gap-0.5">
                     <button onClick={() => moveKat(idx, -1)} disabled={idx === 0} className="disabled:opacity-20 hover:opacity-70">
                       <ChevronUp size={12} style={{ color: "var(--text-muted)" }} />
@@ -248,25 +309,19 @@ export default function MenuYonetim({
                     </button>
                   </div>
 
-                  {/* İsim / düzenleme */}
                   {editKat === kat ? (
-                    <input
-                      autoFocus
-                      value={editKatVal}
+                    <input autoFocus value={editKatVal}
                       onChange={(e) => setEditKatVal(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") renameKat(kat); if (e.key === "Escape") setEditKat(null); }}
-                      className={`${inputCls} flex-1 py-1 text-sm`}
-                    />
+                      className={`${inputCls} flex-1 py-1 text-sm`} />
                   ) : (
                     <span className="flex-1 text-sm font-medium" style={{ color: "var(--text)" }}>{kat}</span>
                   )}
 
-                  {/* Öğe sayısı */}
                   <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {(grouped[kat] ?? []).length} öğe
                   </span>
 
-                  {/* Aksiyonlar */}
                   {editKat === kat ? (
                     <div className="flex gap-1">
                       <button onClick={() => renameKat(kat)} disabled={katLoading}
@@ -280,17 +335,12 @@ export default function MenuYonetim({
                     </div>
                   ) : (
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => { setEditKat(kat); setEditKatVal(kat); }}
-                        className="p-1 rounded hover:bg-white/5 transition-colors"
-                        title="Yeniden adlandır">
+                      <button onClick={() => { setEditKat(kat); setEditKatVal(kat); }}
+                        className="p-1 rounded hover:bg-white/5 transition-colors" title="Yeniden adlandır">
                         <Pencil size={13} style={{ color: "var(--text-muted)" }} />
                       </button>
-                      <button
-                        onClick={() => deleteKat(kat)}
-                        disabled={katLoading}
-                        className="p-1 rounded hover:bg-red-500/10 transition-colors disabled:opacity-40"
-                        title="Sil">
+                      <button onClick={() => deleteKat(kat)} disabled={katLoading}
+                        className="p-1 rounded hover:bg-red-500/10 transition-colors disabled:opacity-40" title="Sil">
                         <Trash2 size={13} style={{ color: "var(--text-muted)" }} />
                       </button>
                     </div>
@@ -299,16 +349,12 @@ export default function MenuYonetim({
               ))}
             </div>
 
-            {/* Yeni kategori ekle */}
             <div className="flex gap-2 pt-1">
-              <input
-                value={yeniKat}
-                onChange={(e) => setYeniKat(e.target.value)}
+              <input value={yeniKat} onChange={(e) => setYeniKat(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") addKat(); }}
-                placeholder="Yeni kategori adı..."
-                className={`${inputCls} flex-1 text-sm`}
-              />
-              <button onClick={addKat} disabled={katLoading || !yeniKat.trim()} className="btn-primary text-xs px-4 disabled:opacity-40 flex items-center gap-1">
+                placeholder="Yeni kategori adı..." className={`${inputCls} flex-1 text-sm`} />
+              <button onClick={addKat} disabled={katLoading || !yeniKat.trim()}
+                className="btn-primary text-xs px-4 disabled:opacity-40 flex items-center gap-1">
                 <Plus size={13} /> Ekle
               </button>
             </div>
@@ -358,56 +404,19 @@ export default function MenuYonetim({
         </div>
 
         {/* Liste */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {kategoriler.map((cat) => (
-            <div key={cat} className="card p-6">
-              <h2 className="font-semibold mb-4 uppercase tracking-wider text-sm" style={{ color: "var(--text)" }}>{cat}</h2>
-              {(grouped[cat] ?? []).length === 0 ? (
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Bu kategoride öğe yok.</p>
-              ) : (
-                <div className="space-y-2">
-                  {grouped[cat].map((item) => (
-                    <div key={item.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${!item.active ? "opacity-40" : ""}`}
-                      style={{ border: "1px solid var(--border)" }}>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate" style={{ color: "var(--text)" }}>{item.name}</p>
-                        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
-                      </div>
-                      <div className="mx-4 text-right whitespace-nowrap">
-                        <span className="text-sm font-bold block" style={{ color: "#1A73E8" }}>{item.price}</span>
-                        {item.happyHourPrice && (
-                          <span className="text-xs font-semibold" style={{ color: "#F59E0B" }}>⚡ {item.happyHourPrice}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => toggleActive(item.id, item.active)}
-                          className={item.active ? "badge badge-green" : "badge"}>
-                          {item.active ? "Aktif" : "Pasif"}
-                        </button>
-                        <button onClick={() => setStokModal(item)} title="Stok bağlantıları"
-                          className="p-1 rounded transition-colors hover:bg-white/5">
-                          <Package size={14} style={{ color: "var(--text-muted)" }} />
-                        </button>
-                        <button onClick={() => deleteItem(item.id)}
-                          className="text-xs px-1 transition-colors hover:text-red-400"
-                          style={{ color: "var(--text-muted)" }}>×</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <AccordionKategori key={cat} cat={cat} items={grouped[cat] ?? []}
+              toggleActive={toggleActive} deleteItem={deleteItem} setStokModal={setStokModal} />
           ))}
 
-          {/* Kategorisiz öğeler */}
           {uncategorized.length > 0 && (
             <div className="card p-6" style={{ borderColor: "#F59E0B" }}>
-              <h2 className="font-semibold mb-4 uppercase tracking-wider text-sm" style={{ color: "#F59E0B" }}>
+              <h2 className="font-semibold mb-2 uppercase tracking-wider text-sm" style={{ color: "#F59E0B" }}>
                 ⚠ Kategorisiz Öğeler
               </h2>
               <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-                Bu öğelerin kategorisi silinmiş veya değiştirilmiş. Yeni bir kategori seçin ya da silin.
+                Bu öğelerin kategorisi silinmiş veya değiştirilmiş.
               </p>
               <div className="space-y-2">
                 {uncategorized.map((item) => (
