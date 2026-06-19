@@ -57,8 +57,43 @@ const SWITCH_SECTIONS = [
     fields: [
       {
         name: "rezervasyonAktif",
-        label: "Rezervasyon Modülü",
+        label: "Rezervasyon",
         desc: "Rezervasyon alma ve yönetim ekranı aktif olsun",
+      },
+      {
+        name: "crmAktif",
+        label: "Müşteri CRM",
+        desc: "Müşteri veritabanı ve geçmiş takibi aktif olsun",
+      },
+      {
+        name: "stokAktif",
+        label: "Stok Takibi",
+        desc: "Stok yönetimi ve uyarı sistemi aktif olsun",
+      },
+      {
+        name: "galeriAktif",
+        label: "Galeri",
+        desc: "Fotoğraf galerisi yönetimi aktif olsun",
+      },
+      {
+        name: "raporlarAktif",
+        label: "Raporlar",
+        desc: "Satış raporları ve CSV export aktif olsun",
+      },
+      {
+        name: "kasaAktif",
+        label: "Kasa / Ödeme Al",
+        desc: "Masadan ödeme alma ve kasa ekranı aktif olsun",
+      },
+      {
+        name: "rbacAktif",
+        label: "Kullanıcı Rolleri (RBAC)",
+        desc: "Garson/şef/müdür rol sistemi aktif olsun. Kapalıysa herkes admin paneline tam erişir",
+      },
+      {
+        name: "mailBildirimiAktif",
+        label: "Mail Bildirimleri",
+        desc: "Rezervasyon hatırlatma ve stok uyarı mailleri gönderilsin",
       },
     ],
   },

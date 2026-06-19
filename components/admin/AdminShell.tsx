@@ -13,22 +13,23 @@ import CalendarDropdown from "./CalendarDropdown";
 
 type Role = "admin" | "mudur" | "garson" | "sef";
 
-const navItems: { href: string; label: string; icon: React.ElementType; roles: Role[] }[] = [
+// modul: hangi ayar key'i "true" olduğunda gösterilir. undefined = her zaman göster
+const navItems: { href: string; label: string; icon: React.ElementType; roles: Role[]; modul?: string }[] = [
   { href: "/admin",                label: "Dashboard",        icon: LayoutDashboard, roles: ["admin","mudur","garson","sef"] },
-  { href: "/admin/rezervasyonlar", label: "Rezervasyonlar",   icon: Calendar,        roles: ["admin","mudur","garson"] },
+  { href: "/admin/rezervasyonlar", label: "Rezervasyonlar",   icon: Calendar,        roles: ["admin","mudur","garson"],      modul: "rezervasyonAktif" },
   { href: "/admin/masalar",        label: "Masa & QR",        icon: Armchair,        roles: ["admin","mudur","garson"] },
   { href: "/admin/plan",           label: "Masa Planı",       icon: LayoutTemplate,  roles: ["admin","mudur","garson"] },
   { href: "/admin/pos",            label: "Satış Ekranı",     icon: ShoppingCart,    roles: ["admin","mudur","garson"] },
   { href: "/admin/siparisler",     label: "Siparişler",       icon: ClipboardList,   roles: ["admin","mudur","garson","sef"] },
-  { href: "/admin/kasa",           label: "Kasa",             icon: Wallet,          roles: ["admin","mudur"] },
+  { href: "/admin/kasa",           label: "Kasa",             icon: Wallet,          roles: ["admin","mudur"],               modul: "kasaAktif" },
   { href: "/admin/menu",           label: "Menü Yönetimi",    icon: UtensilsCrossed, roles: ["admin","mudur"] },
-  { href: "/admin/galeri",         label: "Galeri",           icon: Images,          roles: ["admin","mudur"] },
+  { href: "/admin/galeri",         label: "Galeri",           icon: Images,          roles: ["admin","mudur"],               modul: "galeriAktif" },
   { href: "/admin/icerik",         label: "İçerik Yönetimi",  icon: Layers,          roles: ["admin","mudur"] },
-  { href: "/admin/crm",            label: "Müşteri CRM",      icon: Users,           roles: ["admin","mudur"] },
-  { href: "/admin/stok",           label: "Stok Takibi",      icon: Package,         roles: ["admin","mudur"] },
-  { href: "/admin/raporlar",       label: "Raporlar",         icon: BarChart2,       roles: ["admin","mudur"] },
+  { href: "/admin/crm",            label: "Müşteri CRM",      icon: Users,           roles: ["admin","mudur"],               modul: "crmAktif" },
+  { href: "/admin/stok",           label: "Stok Takibi",      icon: Package,         roles: ["admin","mudur"],               modul: "stokAktif" },
+  { href: "/admin/raporlar",       label: "Raporlar",         icon: BarChart2,       roles: ["admin","mudur"],               modul: "raporlarAktif" },
   { href: "/admin/ayarlar",        label: "Ayarlar",          icon: Settings,        roles: ["admin"] },
-  { href: "/admin/kullanicilar",   label: "Kullanıcılar",     icon: UserCog,         roles: ["admin"] },
+  { href: "/admin/kullanicilar",   label: "Kullanıcılar",     icon: UserCog,         roles: ["admin"],                       modul: "rbacAktif" },
   { href: "/admin/kurulum",        label: "Kurulum Rehberi",  icon: BookOpen,        roles: ["admin"] },
 ];
 
@@ -80,12 +81,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [open, setOpen] = useState(false);
   const [me, setMe] = useState<{ name: string; email: string; role: string } | null>(null);
   const [shellToastlar, setShellToastlar] = useState<ShellToast[]>([]);
+  const [moduller, setModuller] = useState<Record<string, string>>({});
   const shellCounter = useRef(0);
   const bildirildi = useRef<Set<number>>(new Set());
 
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     fetch("/api/admin/me").then((r) => r.ok ? r.json() : null).then(setMe);
+    fetch("/api/admin/ayarlar").then((r) => r.ok ? r.json() : {}).then(setModuller);
   }, []);
 
   // Global garson talebi dinleyici — her sayfada çalışır
@@ -161,6 +164,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <nav className="flex-1 px-2 pt-3 space-y-0.5 overflow-y-auto pb-4">
         {navItems
           .filter((item) => !me || item.roles.includes(me.role as Role))
+          .filter((item) => !item.modul || moduller[item.modul] !== "false")
           .map((item) => {
             const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             const Icon = item.icon;
