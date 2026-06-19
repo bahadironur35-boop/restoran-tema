@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 type SiparisItem = { id: number; name: string; adet: number; not: string | null };
 type Siparis = {
@@ -16,6 +16,10 @@ const durumRenk: Record<string, string> = {
   hazirlaniyor: "border-blue-600 bg-blue-900/10",
 };
 
+function gecikmeVar(date: string, dakika = 15) {
+  return (Date.now() - new Date(date).getTime()) > dakika * 60 * 1000;
+}
+
 const durumLabel: Record<string, string> = {
   bekliyor: "Bekliyor",
   hazirlaniyor: "Hazırlanıyor",
@@ -30,10 +34,43 @@ function elapsed(date: string) {
 export default function MutfakPage() {
   const [siparisler, setSiparisler] = useState<Siparis[]>([]);
   const [tick, setTick] = useState(0);
+  const oncekiAdet = useRef(0);
+  const [kdsAktif, setKdsAktif] = useState<boolean | null>(null);
+  const [restaurantName, setRestaurantName] = useState("Mutfak");
+
+  useEffect(() => {
+    fetch("/api/admin/ayarlar").then((r) => r.json()).then((data) => {
+      setKdsAktif(data.kdsAktif !== "false");
+      if (data.restaurantName) setRestaurantName(data.restaurantName);
+    });
+  }, []);
+
+  const beep = () => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    } catch {}
+  };
 
   const fetchSiparisler = useCallback(async () => {
     const res = await fetch("/api/mutfak");
-    setSiparisler(await res.json());
+    const data = await res.json();
+    setSiparisler((prev) => {
+      const yeniAdet = data.filter((s: Siparis) => s.durum === "bekliyor").length;
+      const eskiAdet = prev.filter((s) => s.durum === "bekliyor").length;
+      if (yeniAdet > eskiAdet) beep();
+      oncekiAdet.current = yeniAdet;
+      return data;
+    });
   }, []);
 
   useEffect(() => {
@@ -60,11 +97,21 @@ export default function MutfakPage() {
   const bekleyenler = siparisler.filter((s) => s.durum === "bekliyor");
   const hazirlananlar = siparisler.filter((s) => s.durum === "hazirlaniyor");
 
+  if (kdsAktif === null) return null;
+  if (!kdsAktif) return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-2xl font-bold text-gray-500">KDS Devre Dışı</p>
+        <p className="text-gray-600 mt-2 text-sm">Ayarlar &gt; Sistem Özellikleri &gt; KDS (Mutfak Ekranı)</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[#C9A84C] tracking-widest uppercase">La Maison — Mutfak</h1>
+          <h1 className="text-2xl font-bold text-[#C9A84C] tracking-widest uppercase">{restaurantName} — Mutfak</h1>
           <p className="text-gray-500 text-sm">8 saniyede bir güncelleniyor</p>
         </div>
         <div className="text-right">
@@ -79,14 +126,26 @@ export default function MutfakPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {siparisler.map((s) => (
-            <div key={s.id} className={`border-2 p-5 ${durumRenk[s.durum]}`}>
+          {siparisler.map((s) => {
+            const gecikti = gecikmeVar(s.createdAt);
+            const kartClass = gecikti
+              ? "border-red-500 bg-red-900/20"
+              : durumRenk[s.durum];
+            return (
+            <div key={s.id} className={`border-2 p-5 ${kartClass}`}>
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-3xl font-bold">Masa {s.masa.no}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-3xl font-bold">Masa {s.masa.no}</p>
+                    {gecikti && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-600 text-white animate-pulse">
+                        GECİKİYOR
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-400 text-sm">
-                    <span className={`font-semibold ${s.durum === "bekliyor" ? "text-yellow-400" : "text-blue-400"}`}>
+                    <span className={`font-semibold ${gecikti ? "text-red-400" : s.durum === "bekliyor" ? "text-yellow-400" : "text-blue-400"}`}>
                       {durumLabel[s.durum]}
                     </span>
                     {" · "}{elapsed(s.createdAt)} önce
@@ -134,7 +193,8 @@ export default function MutfakPage() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
