@@ -267,9 +267,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <LiveClock />
-            <div className="hidden sm:block w-px h-5" style={{ backgroundColor: "#E2E8F0" }} />
             <div className="hidden sm:block"><CalendarDropdown /></div>
+            <div className="hidden sm:block w-px h-5" style={{ backgroundColor: "#E2E8F0" }} />
+            <LiveClock />
             <div className="hidden sm:block w-px h-5" style={{ backgroundColor: "#E2E8F0" }} />
             <button className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title="Bildirimler">
               <Bell size={16} style={{ color: "#64748B" }} />
