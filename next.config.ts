@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
+  // iyzipay uses dynamic require() which is incompatible with Turbopack bundler
+  serverExternalPackages: ["iyzipay"],
 };
 
 export default nextConfig;
