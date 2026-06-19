@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Star, Plus, Minus } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Musteri = any;
@@ -20,6 +21,9 @@ export default function MusteriDetay({ musteri: m }: { musteri: Musteri }) {
   const [saved, setSaved] = useState(false);
   const [ziyaretForm, setZiyaretForm] = useState({ tarih: "", kisiSayisi: "2", not: "" });
   const [addingZiyaret, setAddingZiyaret] = useState(false);
+  const [puan, setPuan] = useState<number>(m.puan ?? 0);
+  const [puanForm, setPuanForm] = useState({ miktar: "", aciklama: "" });
+  const [puanYukleniyor, setPuanYukleniyor] = useState(false);
 
   const saveEdit = async () => {
     setSaving(true);
@@ -31,6 +35,22 @@ export default function MusteriDetay({ musteri: m }: { musteri: Musteri }) {
     setSaving(false);
     setSaved(true);
     setTimeout(() => { setSaved(false); router.refresh(); }, 1500);
+  };
+
+  const puanIslem = async (pozitif: boolean) => {
+    const miktar = parseInt(puanForm.miktar);
+    if (!miktar || miktar <= 0) return;
+    setPuanYukleniyor(true);
+    const gercekMiktar = pozitif ? miktar : -miktar;
+    const res = await fetch(`/api/admin/crm/${m.id}/puan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ miktar: gercekMiktar, aciklama: puanForm.aciklama }),
+    });
+    const data = await res.json();
+    setPuan(data.puan ?? puan + gercekMiktar);
+    setPuanForm({ miktar: "", aciklama: "" });
+    setPuanYukleniyor(false);
   };
 
   const addZiyaret = async (e: React.FormEvent) => {
@@ -99,16 +119,68 @@ export default function MusteriDetay({ musteri: m }: { musteri: Musteri }) {
         </div>
 
         {/* Özet istatistikler */}
-        <div className="card p-6 grid grid-cols-2 gap-4 text-center">
+        <div className="card p-6 grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-2xl font-bold" style={{ color: "var(--gold)" }}>{m.ziyaretler.length}</p>
-            <p className="text-mu text-xs">Toplam Ziyaret</p>
+            <p className="text-mu text-xs">Ziyaret</p>
           </div>
           <div>
             <p className="text-2xl font-bold text-th">{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 m.rezervasyonlar.filter((r: any) => r.status === "onaylandi").length}</p>
-            <p className="text-mu text-xs">Onaylı Rezerv.</p>
+            <p className="text-mu text-xs">Rezerv.</p>
           </div>
+          <div>
+            <p className="text-2xl font-bold" style={{ color: "#F59E0B" }}>{puan}</p>
+            <p className="text-mu text-xs">Puan</p>
+          </div>
+        </div>
+
+        {/* Puan yönetimi */}
+        <div className="card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Star size={15} style={{ color: "#F59E0B" }} />
+            <h2 className="font-semibold uppercase tracking-wider text-sm" style={{ color: "var(--text)" }}>Puan Yönetimi</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}>
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>Mevcut Puan</span>
+              <span className="text-xl font-bold" style={{ color: "#F59E0B" }}>{puan}</span>
+            </div>
+            <input value={puanForm.miktar} onChange={(e) => setPuanForm((p) => ({ ...p, miktar: e.target.value }))}
+              type="number" min="1" placeholder="Puan miktarı" className="input-field w-full text-sm" />
+            <input value={puanForm.aciklama} onChange={(e) => setPuanForm((p) => ({ ...p, aciklama: e.target.value }))}
+              placeholder="Açıklama (opsiyonel)" className="input-field w-full text-sm" />
+            <div className="flex gap-2">
+              <button onClick={() => puanIslem(true)} disabled={puanYukleniyor || !puanForm.miktar}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                style={{ backgroundColor: "#16A34A" }}>
+                <Plus size={14} /> Puan Ekle
+              </button>
+              <button onClick={() => puanIslem(false)} disabled={puanYukleniyor || !puanForm.miktar}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                style={{ backgroundColor: "#EF4444" }}>
+                <Minus size={14} /> Puan Düş
+              </button>
+            </div>
+          </div>
+
+          {/* Puan geçmişi */}
+          {m.puanHareketler?.length > 0 && (
+            <div className="mt-4 space-y-1.5">
+              <p className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Geçmiş</p>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {m.puanHareketler.map((h: any) => (
+                <div key={h.id} className="flex items-center justify-between text-sm">
+                  <span style={{ color: "var(--text-muted)" }}>
+                    {h.aciklama || (h.tip === "kazandi" ? "Kazandı" : h.tip === "harcadi" ? "Harcadı" : "Manuel")}
+                  </span>
+                  <span className="font-bold" style={{ color: h.miktar > 0 ? "#22C55E" : "#EF4444" }}>
+                    {h.miktar > 0 ? "+" : ""}{h.miktar}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

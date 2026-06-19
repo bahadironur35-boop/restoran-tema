@@ -13,6 +13,7 @@ export default async function MusteriDetayPage({ params }: { params: Promise<{ i
     include: {
       ziyaretler: { orderBy: { createdAt: "desc" } },
       rezervasyonlar: { orderBy: { createdAt: "desc" } },
+      puanHareketler: { orderBy: { createdAt: "desc" }, take: 20 },
     },
   });
 

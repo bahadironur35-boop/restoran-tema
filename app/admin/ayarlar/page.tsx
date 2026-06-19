@@ -98,6 +98,13 @@ const SWITCH_SECTIONS = [
     ],
   },
   {
+    section: "Müşteri Sadakat",
+    fields: [
+      { name: "sadakatAktif", label: "Puan Sistemi", desc: "Müşteriler harcamalarına göre puan kazansın" },
+      { name: "sadakatDamgaAktif", label: "Damga Kartı", desc: "Puan yerine damga sistemi kullanılsın (X ziyarette ödül)" },
+    ],
+  },
+  {
     section: "Ödeme Yöntemleri",
     fields: [
       {
@@ -142,6 +149,13 @@ const FIELDS = [
     { name: "happyHourBaslangic", label: "Başlangıç Saati (örn. 17:00)", default: "" },
     { name: "happyHourBitis", label: "Bitiş Saati (örn. 19:00)", default: "" },
     { name: "happyHourEtiket", label: "Etiket Metni", default: "Happy Hour" },
+  ]},
+  { section: "Sadakat Programı", items: [
+    { name: "puanOrani", label: "Puan Oranı (₺ başına kaç puan)", default: "1" },
+    { name: "puanOdul", label: "Ödül Eşiği (kaç puanda ödül)", default: "100" },
+    { name: "puanOdulAciklama", label: "Ödül Açıklaması", default: "1 Bedava İçecek" },
+    { name: "damgaSayisi", label: "Damga Kartı — Kaç Damgada Ödül", default: "10" },
+    { name: "damgaOdul", label: "Damga Ödülü", default: "1 Bedava Ürün" },
   ]},
   { section: "E-posta Ayarları", items: [
     { name: "resendApiKey", label: "Resend API Key", default: "" },

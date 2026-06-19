@@ -32,9 +32,21 @@ model Musteri {
   dogumGunu    String?        // YYYY-MM-DD
   vip          Boolean        @default(false)
   notlar       String?
+  puan         Int            @default(0)
   createdAt    DateTime       @default(now())
   rezervasyonlar Rezervasyon[]
   ziyaretler   MusteriZiyaret[]
+  puanHareketler PuanHareket[]
+}
+
+model PuanHareket {
+  id         Int      @id @default(autoincrement())
+  musteriId  Int
+  musteri    Musteri  @relation(fields: [musteriId], references: [id], onDelete: Cascade)
+  tip        String   // "kazandi" | "harcadi" | "manuel"
+  miktar     Int
+  aciklama   String?
+  createdAt  DateTime @default(now())
 }
 
 model StokItem {

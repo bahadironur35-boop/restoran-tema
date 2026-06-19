@@ -7,6 +7,7 @@ type Rezervasyon = { id: number; date: string; status: string };
 type Musteri = {
   id: number; name: string; email: string; phone: string | null;
   dogumGunu: string | null; vip: boolean; notlar: string | null;
+  puan: number;
   ziyaretler: Ziyaret[]; rezervasyonlar: Rezervasyon[];
   createdAt: string;
 };
@@ -200,6 +201,12 @@ export default function CrmClient() {
                   <p className="text-lg font-bold" style={{ color: "var(--text)" }}>{m.rezervasyonlar.length}</p>
                   <p className="text-mu text-xs">Rezerv.</p>
                 </div>
+                {m.puan > 0 && (
+                  <div>
+                    <p className="text-lg font-bold" style={{ color: "#F59E0B" }}>{m.puan}</p>
+                    <p className="text-mu text-xs">Puan</p>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
