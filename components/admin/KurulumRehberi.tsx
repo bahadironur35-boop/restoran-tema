@@ -277,6 +277,50 @@ const BOLUMLER: Bolum[] = [
   },
   {
     no: 8,
+    baslik: "İnternet ve Altyapı",
+    ozet: "Sistem tamamen bulut tabanlı — internet kesilirse çalışmaz. Önlem olarak çift hat şart.",
+    renk: "#EF4444",
+    adimlar: [
+      {
+        baslik: "Çift internet hattı kur",
+        sure: "1-2 gün (ISP kurulum süreci)",
+        zorunlu: true,
+        aciklama: "EatOs internet olmadan çalışmaz. Fiber kesildiğinde 4G devreye girmeli. Bu, offline geliştirmekten çok daha ucuz ve hızlı bir çözüm.",
+        adimlar: [
+          "Ana hat: fiber internet (Türk Telekom, Superonline vb.)",
+          "Yedek hat: 4G/LTE mobil router (Vodafone, Turkcell, Türk Telekom)",
+          "4G router'ı fiber modem'in WAN portuna bağla (failover modu)",
+          "Fiber kesildiğinde router otomatik 4G'ye geçmeli — test et",
+          "Alternatif: TP-Link Deco, Ubiquiti gibi router'larda failover ayarı var",
+        ],
+        notlar: [
+          "Toplam maliyet: fiber ~200₺ + 4G SIM ~100-150₺ = aylık ~300-350₺",
+          "Birçok 4G router failover özelliğini destekler — cihaz alırken sor",
+          "Mobil SIM için kurumsal hat al — kota sınırı olmayan tarifeler var",
+          "Elektrik kesintisine karşı modem + router'ı UPS'e bağla (~500₺ yatırım)",
+        ],
+      },
+      {
+        baslik: "Tablet ve cihaz hazırlığı",
+        sure: "30 dk",
+        zorunlu: false,
+        aciklama: "Mutfak KDS ve garson terminalleri için sabit cihazlar önerilir.",
+        adimlar: [
+          "Mutfak KDS için: duvar montajlı Android tablet (2. el ~1.500₺)",
+          "Tarayıcıyı tam ekran modunda aç: Chrome → Menü → 'Tam Ekran'",
+          "Tablet şarjda sabit dursun — batarya ömrünü uzatmak için şarjı %80'de tut",
+          "Garson için: cepteki tarayıcı yeterli, uygulama gerekmez",
+          "PWA olarak ana ekrana ekle: Chrome → Paylaş → 'Ana Ekrana Ekle'",
+        ],
+        notlar: [
+          "iOS Safari'de PWA kurulumu: Paylaş → 'Ana Ekrana Ekle'",
+          "Kioskmode için Android'de 'Pinned Apps' özelliği kullanılabilir",
+        ],
+      },
+    ],
+  },
+  {
+    no: 9,
     baslik: "Canlıya Alma Testi",
     ozet: "Her şeyi kurduktan sonra gerçek bir sipariş akışını baştan sona test et.",
     renk: "#10B981",
