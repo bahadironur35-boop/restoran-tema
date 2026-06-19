@@ -22,8 +22,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(siparisler);
   }
 
+  const masaIdParam = req.nextUrl.searchParams.get("masaId");
   const siparisler = await prisma.siparis.findMany({
-    where: { durum: { not: "teslim" } },
+    where: {
+      durum: { not: "teslim" },
+      ...(masaIdParam ? { masaId: parseInt(masaIdParam) } : {}),
+    },
     include: { items: true, masa: true },
     orderBy: { createdAt: "asc" },
   });

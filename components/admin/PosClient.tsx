@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ShoppingCart, Trash2, Plus, Minus, Printer, CreditCard, Banknote, Utensils, Tag, FileText, X } from "lucide-react";
 
 type MenuItem = { id: number; name: string; price: string; category: string; desc: string; image?: string };
@@ -42,10 +43,20 @@ export default function PosClient() {
   const [search, setSearch] = useState("");
   const [aktifYontemler, setAktifYontemler] = useState<string[]>(["nakit", "kart", "yemek"]);
   const [paketAktif, setPaketAktif] = useState(true);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    fetch("/api/admin/masalar").then((r) => r.json()).then(setMasalar);
+    fetch("/api/admin/masalar").then((r) => r.json()).then((data: Masa[]) => {
+      setMasalar(data);
+      // URL'de masaId varsa otomatik seç
+      const urlMasaId = searchParams.get("masaId");
+      if (urlMasaId) {
+        const m = data.find((x) => x.id === parseInt(urlMasaId));
+        if (m) setSelectedMasa(m);
+      }
+    });
     fetch("/api/menu-public").then((r) => r.json()).then(setMenu);
+
     fetch("/api/admin/ayarlar").then((r) => r.json()).then((data) => {
       const yontemler = [
         ...(data.odemeNakit  !== "false" ? ["nakit"]  : []),
