@@ -204,3 +204,26 @@ model MasaTalebi {
   durum     String   @default("bekliyor") // bekliyor | tamam
   createdAt DateTime @default(now())
 }
+
+model TeslimatSiparis {
+  id           Int      @id @default(autoincrement())
+  musteriAdi   String
+  telefon      String
+  adres        String
+  notlar       String?
+  durum        String   @default("hazirlaniyor") // hazirlaniyor | yolda | teslim | iptal
+  kurye        String?
+  toplamTutar  Float    @default(0)
+  items        TeslimatItem[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model TeslimatItem {
+  id         Int             @id @default(autoincrement())
+  siparisId  Int
+  siparis    TeslimatSiparis @relation(fields: [siparisId], references: [id], onDelete: Cascade)
+  name       String
+  price      Float
+  adet       Int             @default(1)
+}

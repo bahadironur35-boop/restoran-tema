@@ -95,6 +95,11 @@ const SWITCH_SECTIONS = [
         label: "Mail Bildirimleri",
         desc: "Rezervasyon hatırlatma ve stok uyarı mailleri gönderilsin",
       },
+      {
+        name: "teslimatAktif",
+        label: "Teslimat / Kurye",
+        desc: "Paket sipariş ve kurye takip modülü aktif olsun",
+      },
     ],
   },
   {
