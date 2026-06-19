@@ -23,7 +23,7 @@ function AccordionKategori({
   deleteItem: (id: number) => void;
   setStokModal: (item: MenuItem) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return (
     <div className="card overflow-hidden">
       <button
