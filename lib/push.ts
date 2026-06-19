@@ -1,13 +1,21 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:admin@eatos.app",
-  process.env.VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? "",
-);
+function getWebpush() {
+  const pub = process.env.VAPID_PUBLIC_KEY;
+  const priv = process.env.VAPID_PRIVATE_KEY;
+  if (!pub || !priv) return null;
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? "mailto:admin@eatos.app",
+    pub,
+    priv,
+  );
+  return webpush;
+}
 
 export async function pushGonder(tip: "garson" | "musteri", payload: object, masaId?: number) {
+  const wp = getWebpush();
+  if (!wp) return [];
   const where = masaId
     ? { tip, masaId }
     : { tip };
@@ -17,7 +25,7 @@ export async function pushGonder(tip: "garson" | "musteri", payload: object, mas
   const sonuclar = await Promise.allSettled(
     abonelikler.map(async (a) => {
       try {
-        await webpush.sendNotification(
+        await wp.sendNotification(
           { endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } },
           JSON.stringify(payload),
         );
