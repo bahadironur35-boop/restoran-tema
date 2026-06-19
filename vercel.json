@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/rezervasyon-hatirlatma",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/stok-uyari",
+      "schedule": "0 5 * * *"
+    }
+  ]
+}

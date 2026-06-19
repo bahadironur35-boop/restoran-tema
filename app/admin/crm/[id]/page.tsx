@@ -21,10 +21,10 @@ export default async function MusteriDetayPage({ params }: { params: Promise<{ i
   return (
     <div>
       <div className="flex items-center gap-3 mb-8">
-        <a href="/admin/crm" className="text-gray-500 hover:text-white text-sm transition-colors">← CRM</a>
-        <span className="text-gray-700">/</span>
+        <a href="/admin/crm" className="text-mu hover:text-th text-sm transition-colors">← CRM</a>
+        <span className="text-mu">/</span>
         <h1 className="text-2xl font-bold">{musteri.name}</h1>
-        {musteri.vip && <span className="text-[#C9A84C]">⭐ VIP</span>}
+        {musteri.vip && <span className="text-go">⭐ VIP</span>}
       </div>
       <MusteriDetay musteri={musteri} />
     </div>

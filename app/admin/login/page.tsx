@@ -26,26 +26,26 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ backgroundColor: "#0A192F" }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#C9A84C] tracking-widest uppercase">La Maison</h1>
-          <p className="text-gray-500 text-sm mt-1">Yönetim Paneli</p>
+          <h1 className="text-2xl font-bold tracking-widest uppercase" style={{ color: "#1A73E8" }}>EatOs</h1>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Yönetim Paneli</p>
         </div>
-        <form onSubmit={handleSubmit} className="bg-[#1A1A1A] border border-[#2A2A2A] p-8 space-y-4">
+        <form onSubmit={handleSubmit} className="p-8 space-y-4 rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
           <div>
-            <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Şifre</label>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>Şifre</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoFocus
-              className="w-full bg-[#0F0F0F] border border-[#2A2A2A] text-white px-4 py-3 focus:outline-none focus:border-[#C9A84C] transition-colors"
+              className="input-field w-full"
               placeholder="••••••••"
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-sm" style={{ color: "#EF4444" }}>{error}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full text-sm tracking-widest uppercase">
             {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>
