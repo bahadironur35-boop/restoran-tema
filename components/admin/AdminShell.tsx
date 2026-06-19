@@ -216,7 +216,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {/* Desktop sidebar */}
       <aside
         className="hidden lg:flex fixed left-0 top-0 h-full flex-col z-40 transition-all duration-200"
-        style={{ width: collapsed ? 56 : 208, backgroundColor: BG, borderRight: `1px solid ${BORDER}` }}
+        style={{ width: collapsed ? 56 : 250, backgroundColor: BG, borderRight: `1px solid ${BORDER}` }}
       >
         <SidebarContent isCollapsed={collapsed} />
       </aside>
@@ -242,7 +242,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
       {/* Main */}
       <main
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-200 ${collapsed ? "lg:ml-14" : "lg:ml-52"}`}
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-200 ${collapsed ? "lg:ml-14" : "lg:ml-[250px]"}`}
       >
 
         {/* Header */}
