@@ -205,6 +205,28 @@ model MasaTalebi {
   createdAt DateTime @default(now())
 }
 
+model OnlineOdeme {
+  id              Int      @id @default(autoincrement())
+  provider        String   // "iyzico" | "stripe"
+  externalId      String?  // provider'dan gelen payment/checkoutForm id
+  referansId      String   @unique // bizim ürettiğimiz tekil ref
+  tutar           Float
+  durum           String   @default("bekliyor") // bekliyor | tamamlandi | basarisiz | iade
+  // Bağlantı — biri dolu olur
+  masaId          Int?
+  teslimatId      Int?
+  rezervasyonId   Int?
+  // Müşteri
+  musteriAdi      String?
+  musteriEmail    String?
+  musteriTelefon  String?
+  // Detay
+  callbackUrl     String?
+  errorMsg        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model TeslimatSiparis {
   id           Int      @id @default(autoincrement())
   musteriAdi   String

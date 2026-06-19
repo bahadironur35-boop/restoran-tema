@@ -6,7 +6,7 @@ import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat, UserCog } from "lucide-re
 import {
   LayoutDashboard, Calendar, Armchair, ShoppingCart,
   ClipboardList, UtensilsCrossed, Images, Users,
-  Package, Settings, LayoutTemplate, BarChart2, Wallet, BookOpen, Layers, Tag, Bike,
+  Package, Settings, LayoutTemplate, BarChart2, Wallet, BookOpen, Layers, Tag, Bike, CreditCard,
 } from "lucide-react";
 import { useEffect } from "react";
 import CalendarDropdown from "./CalendarDropdown";
@@ -31,6 +31,7 @@ const navItems: { href: string; label: string; icon: React.ElementType; roles: R
   { href: "/admin/raporlar",       label: "Raporlar",         icon: BarChart2,       roles: ["admin","mudur"],               modul: "raporlarAktif" },
   { href: "/admin/kuponlar",        label: "Kuponlar",         icon: Tag,             roles: ["admin","mudur"] },
   { href: "/admin/teslimat",       label: "Teslimat / Kurye", icon: Bike,            roles: ["admin","mudur"],               modul: "teslimatAktif" },
+  { href: "/admin/odemeler",       label: "Online Ödemeler",  icon: CreditCard,      roles: ["admin","mudur"],               modul: "onlineOdemeAktif" },
   { href: "/admin/ayarlar",        label: "Ayarlar",          icon: Settings,        roles: ["admin"] },
   { href: "/admin/kullanicilar",   label: "Kullanıcılar",     icon: UserCog,         roles: ["admin"],                       modul: "rbacAktif" },
   { href: "/admin/kurulum",        label: "Kurulum Rehberi",  icon: BookOpen,        roles: ["admin"] },

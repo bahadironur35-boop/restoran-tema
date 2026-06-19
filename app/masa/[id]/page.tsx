@@ -36,6 +36,12 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
   const [damgaOdul, setDamgaOdul] = useState("1 Bedava Ürün");
   const [mevcutDamga, setMevcutDamga] = useState(0);
   const [odulKazanildi, setOdulKazanildi] = useState(false);
+  // Online ödeme
+  const [onlineOdemeAktif, setOnlineOdemeAktif] = useState(false);
+  const [odemeForm, setOdemeForm] = useState({ ad: "", email: "" });
+  const [odemeModal, setOdemeModal] = useState(false);
+  const [odemeYukleniyor, setOdemeYukleniyor] = useState(false);
+  const [checkoutHtml, setCheckoutHtml] = useState<string | null>(null);
   const { durum: pushDurum, abone } = usePushAbonelik("musteri", parseInt(id));
   const [tema, setTema] = useState({
     restaurantName: "EatOs",
@@ -66,6 +72,7 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
       if (data.qrMasaTalebiAktif === "false") setTalepAktif(false);
       if (data.qrFiyatGoster === "false") setFiyatGoster(false);
       if (data.qrSiparisNotuAktif === "false") setNotAktif(false);
+      if (data.onlineOdemeAktif === "true") setOnlineOdemeAktif(true);
       if (data.sadakatAktif === "true") setSadakatAktif(true);
       if (data.sadakatDamgaAktif === "true") setDamgaAktif(true);
       if (data.damgaSayisi) setDamgaSayisi(parseInt(data.damgaSayisi) || 10);
@@ -167,6 +174,30 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
     setTalepSent(tip);
     setTalepLoading(false);
     setTimeout(() => setTalepSent(null), 5000);
+  };
+
+  const kartlaOde = async () => {
+    if (!odemeForm.ad || !odemeForm.email) return;
+    setOdemeYukleniyor(true);
+    const res = await fetch("/api/odeme/baslat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tutar: cartTotal,
+        musteriAdi: odemeForm.ad,
+        musteriEmail: odemeForm.email,
+        masaId: Number(id),
+        aciklama: `${masaInfo ? `Masa ${masaInfo.no}` : `Masa ${id}`} - ${tema.restaurantName}`,
+      }),
+    });
+    const data = await res.json();
+    setOdemeYukleniyor(false);
+    if (data.odemeUrl) {
+      window.location.href = data.odemeUrl; // Stripe → redirect
+    } else if (data.checkoutFormHtml) {
+      setCheckoutHtml(data.checkoutFormHtml); // İyzico → iframe HTML
+      setOdemeModal(false);
+    }
   };
 
   const grouped = CATEGORIES.reduce<Record<string, MenuItem[]>>((acc, cat) => {
@@ -450,9 +481,64 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
                 >
                   {sending ? "Gönderiliyor..." : hasOrdered ? "Siparişe Ekle" : "Sipariş Ver"}
                 </button>
+                {onlineOdemeAktif && (
+                  <button
+                    onClick={() => setOdemeModal(true)}
+                    className="w-full py-3 font-semibold text-sm rounded-xl border"
+                    style={{ borderColor: "#2A2A2A", color: "#aaa", backgroundColor: "transparent" }}
+                  >
+                    💳 Kartla Öde (₺{cartTotal.toFixed(0)})
+                  </button>
+                )}
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* İyzico checkout form overlay */}
+      {checkoutHtml && (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: "#000" }}>
+          <div className="flex justify-end p-3">
+            <button onClick={() => setCheckoutHtml(null)} className="text-white text-2xl px-3">×</button>
+          </div>
+          <div className="flex-1 overflow-auto px-4 pb-4"
+            dangerouslySetInnerHTML={{ __html: checkoutHtml }} />
+        </div>
+      )}
+
+      {/* Online ödeme modal */}
+      {odemeModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+          onClick={(e) => e.target === e.currentTarget && setOdemeModal(false)}>
+          <div className="w-full max-w-md rounded-t-3xl p-6 space-y-4" style={{ backgroundColor: "#111" }}>
+            <h2 className="font-bold text-white text-base">Kartla Öde</h2>
+            <p className="text-xs" style={{ color: "#888" }}>Ödeme tutarı: <span className="font-bold text-white">₺{cartTotal.toFixed(0)}</span></p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "#888" }}>Adınız Soyadınız</label>
+                <input value={odemeForm.ad} onChange={(e) => setOdemeForm((p) => ({ ...p, ad: e.target.value }))}
+                  placeholder="Ad Soyad"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                  style={{ backgroundColor: "#1A1A1A", border: "1px solid #2A2A2A" }} />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "#888" }}>E-posta</label>
+                <input value={odemeForm.email} onChange={(e) => setOdemeForm((p) => ({ ...p, email: e.target.value }))}
+                  placeholder="ornek@mail.com" type="email"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                  style={{ backgroundColor: "#1A1A1A", border: "1px solid #2A2A2A" }} />
+              </div>
+            </div>
+            <button onClick={kartlaOde} disabled={odemeYukleniyor || !odemeForm.ad || !odemeForm.email}
+              className="w-full py-4 rounded-xl font-bold text-sm disabled:opacity-40"
+              style={{ backgroundColor: BC, color: BG }}>
+              {odemeYukleniyor ? "Yönlendiriliyor..." : "Ödemeye Geç →"}
+            </button>
+            <button onClick={() => setOdemeModal(false)} className="w-full text-sm py-2" style={{ color: "#555" }}>
+              İptal
+            </button>
+          </div>
         </div>
       )}
 

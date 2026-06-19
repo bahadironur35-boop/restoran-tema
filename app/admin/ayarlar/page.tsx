@@ -100,6 +100,11 @@ const SWITCH_SECTIONS = [
         label: "Teslimat / Kurye",
         desc: "Paket sipariş ve kurye takip modülü aktif olsun",
       },
+      {
+        name: "onlineOdemeAktif",
+        label: "Online Ödeme (QR)",
+        desc: "Müşteri QR sayfasında kartla ödeme yapabilsin (İyzico veya Stripe gerektirir)",
+      },
     ],
   },
   {
@@ -165,6 +170,9 @@ const FIELDS = [
   { section: "E-posta Ayarları", items: [
     { name: "resendApiKey", label: "Resend API Key", default: "" },
     { name: "fromEmail", label: "Gönderen E-posta", default: "noreply@lamaison.com.tr" },
+  ]},
+  { section: "Online Ödeme", items: [
+    { name: "odemeProvider", label: "Ödeme Sağlayıcı (iyzico / stripe)", default: "iyzico" },
   ]},
   { section: "Termal Yazıcı", items: [
     { name: "yaziciIp", label: "Yazıcı IP Adresi (örn. 192.168.1.100)", default: "" },
