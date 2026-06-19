@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Sidebar nav hover */
+.sidebar-nav-link:not([style*="background"]):hover {
+  color: #ffffff !important;
+}
+.sidebar-nav-link:not([style*="background"]):hover svg {
+  color: #ffffff !important;
+}
+
 /* ── Design Tokens ── */
 :root {
   --bg:         #F0F4F8;

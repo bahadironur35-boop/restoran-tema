@@ -192,7 +192,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             return (
               <Link key={item.href} href={item.href}
                 title={isCollapsed ? item.label : undefined}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
+                className="sidebar-nav-link group flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
                 style={{
                   fontFamily: '"Segoe UI", "Segoe UI Variable", Inter, ui-sans-serif, system-ui, sans-serif',
                   fontSize: "13px",
@@ -200,11 +200,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   fontWeight: 550,
                   justifyContent: isCollapsed ? "center" : undefined,
                   ...(active
-                    ? { backgroundColor: ACTIVE, color: TEXT_A }
-                    : { color: TEXT }),
+                    ? { backgroundColor: ACTIVE, color: "#ffffff" }
+                    : { color: "#ffffffad" }),
                 }}>
                 <Icon size={15} strokeWidth={active ? 2 : 1.5}
-                  style={{ color: active ? "#fff" : TEXT, flexShrink: 0 }} />
+                  className="transition-colors group-hover:!text-white"
+                  style={{ color: active ? "#ffffff" : "#ffffffad", flexShrink: 0 }} />
                 {!isCollapsed && item.label}
               </Link>
             );
