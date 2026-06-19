@@ -20,6 +20,8 @@ model Rezervasyon {
   createdAt  DateTime  @default(now())
   musteriId  Int?
   musteri    Musteri?  @relation(fields: [musteriId], references: [id])
+  masaId     Int?
+  masa       Masa?     @relation(fields: [masaId], references: [id], onDelete: SetNull)
 }
 
 model Musteri {
@@ -36,14 +38,15 @@ model Musteri {
 }
 
 model StokItem {
-  id        Int            @id @default(autoincrement())
-  name      String
-  birim     String         @default("adet") // adet | kg | litre | gr | ml
-  miktar    Float          @default(0)
-  minMiktar Float          @default(5)
-  kategori  String         @default("Malzeme") // Malzeme | İçecek | Ambalaj | Temizlik
-  createdAt DateTime       @default(now())
+  id         Int            @id @default(autoincrement())
+  name       String
+  birim      String         @default("adet") // adet | kg | litre | gr | ml
+  miktar     Float          @default(0)
+  minMiktar  Float          @default(5)
+  kategori   String         @default("Malzeme") // Malzeme | İçecek | Ambalaj | Temizlik
+  createdAt  DateTime       @default(now())
   hareketler StokHareket[]
+  menuItems  MenuItemStok[]
 }
 
 model StokHareket {
@@ -67,14 +70,26 @@ model MusteriZiyaret {
 }
 
 model MenuItem {
-  id       Int     @id @default(autoincrement())
-  name     String
-  desc     String
-  price    String
-  category String
-  active   Boolean @default(true)
-  order    Int     @default(0)
-  createdAt DateTime @default(now())
+  id        Int              @id @default(autoincrement())
+  name      String
+  desc      String
+  price     String
+  category  String
+  image          String?
+  happyHourPrice String?
+  active         Boolean          @default(true)
+  order     Int              @default(0)
+  createdAt DateTime         @default(now())
+  stoklar   MenuItemStok[]
+}
+
+model MenuItemStok {
+  id          Int      @id @default(autoincrement())
+  menuItemId  Int
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  stokItemId  Int
+  stokItem    StokItem @relation(fields: [stokItemId], references: [id], onDelete: Cascade)
+  miktar      Float    @default(1) // bu menü ürününde kullanılan stok miktarı
 }
 
 model GaleriItem {
@@ -92,12 +107,17 @@ model Ayar {
 }
 
 model Masa {
-  id        Int          @id @default(autoincrement())
-  no        Int          @unique
-  kapasite  Int          @default(4)
-  aktif     Boolean      @default(true)
-  talepler  MasaTalebi[]
-  siparisler Siparis[]
+  id           Int            @id @default(autoincrement())
+  no           Int            @unique
+  kapasite     Int            @default(4)
+  alan         String         @default("Salon")
+  durum        String         @default("bos") // bos | dolu | rezerveli
+  posX         Float          @default(50)
+  posY         Float          @default(50)
+  aktif        Boolean        @default(true)
+  talepler     MasaTalebi[]
+  siparisler   Siparis[]
+  rezervasyonlar Rezervasyon[]
 }
 
 model Siparis {
@@ -120,6 +140,15 @@ model SiparisItem {
   price      String
   adet       Int     @default(1)
   not        String?
+}
+
+model Odeme {
+  id        Int      @id @default(autoincrement())
+  masaId    Int
+  tutar     Float
+  yontem    String   @default("nakit") // nakit | kart | havale
+  notlar    String?
+  createdAt DateTime @default(now())
 }
 
 model MasaTalebi {
