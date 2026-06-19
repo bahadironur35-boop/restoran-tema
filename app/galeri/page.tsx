@@ -1,45 +1,84 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const images = [
-  { src: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80", alt: "Restoran atmosferi" },
-  { src: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&q=80", alt: "Biftek tabağı" },
-  { src: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80", alt: "İç mekan" },
-  { src: "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=800&q=80", alt: "Et yemeği" },
-  { src: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&q=80", alt: "Çorba" },
-  { src: "https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=800&q=80", alt: "Tatlı" },
-  { src: "https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?w=800&q=80", alt: "Şef mutfakta" },
-  { src: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&q=80", alt: "Şarap servisi" },
-  { src: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80", alt: "Restoran masaları" },
-];
+async function getTema() {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  try {
+    const res = await fetch(`${base}/api/tema`, { cache: "no-store" });
+    return res.ok ? res.json() : {};
+  } catch { return {}; }
+}
 
-export default function GaleriPage() {
+async function getGaleri() {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  try {
+    const res = await fetch(`${base}/api/galeri`, { cache: "no-store" });
+    return res.ok ? res.json() : [];
+  } catch { return []; }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTema();
+  const name = t.restaurantName || "EatOs";
+  return {
+    title: `Galeri | ${name}`,
+    description: `${name} restoranının atmosferini fotoğraflarla keşfedin.`,
+  };
+}
+
+type GaleriItem = { id: number; url: string; alt: string };
+
+export default async function GaleriPage() {
+  const [t, galeriItems] = await Promise.all([getTema(), getGaleri()]);
+
+  const restaurantName = t.restaurantName || "EatOs";
+  const logoUrl = t.logoUrl || "";
+  const logoPozisyon = t.logoPozisyon || "orta";
+  const brandColor = t.brandColor || "#C9A84C";
+  const brandColorDark = t.brandColorDark || "#0F0F0F";
+  const brandTextLight = t.brandTextLight || "#FFFFFF";
+
+  const hasImages = (galeriItems as GaleriItem[]).length > 0;
+
   return (
     <>
-      <Navbar />
-      <main className="pt-24 pb-20 px-6 min-h-screen bg-[#0F0F0F]">
+      <Navbar restaurantName={restaurantName} logoUrl={logoUrl} logoPozisyon={logoPozisyon} brandColor={brandColor} />
+      <main className="pt-24 pb-20 px-6 min-h-screen" style={{ backgroundColor: brandColorDark }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-[#C9A84C] tracking-widest uppercase text-sm mb-2">La Maison</p>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Galeri</h1>
-            <div className="w-16 h-0.5 bg-[#C9A84C] mx-auto" />
+            <p className="tracking-widest uppercase text-sm mb-2" style={{ color: brandColor }}>{restaurantName}</p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: brandTextLight }}>Galeri</h1>
+            <div className="w-16 h-0.5 mx-auto" style={{ backgroundColor: brandColor }} />
           </div>
 
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-            {images.map((img, i) => (
-              <div key={i} className="break-inside-avoid overflow-hidden group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  className="w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-            ))}
-          </div>
+          {!hasImages ? (
+            <p className="text-center text-gray-500 py-20">Fotoğraflar yakında eklenecek.</p>
+          ) : (
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+              {(galeriItems as GaleriItem[]).map((img) => (
+                <div key={img.id} className="break-inside-avoid overflow-hidden group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.alt}
+                    className="w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
-      <Footer />
+      <Footer
+        restaurantName={restaurantName}
+        address={t.address || ""}
+        phone={t.phone || ""}
+        email={t.email || ""}
+        weekdayHours={t.weekdayHours || ""}
+        weekendHours={t.weekendHours || ""}
+        brandColor={brandColor}
+      />
     </>
   );
 }
