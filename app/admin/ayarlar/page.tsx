@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const SWITCH_SECTIONS = [
   {
@@ -153,6 +153,10 @@ export default function AyarlarPage() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [embedKopyalandi, setEmbedKopyalandi] = useState(false);
+  const originRef = useRef("");
+
+  useEffect(() => { originRef.current = window.location.origin; }, []);
 
   useEffect(() => {
     fetch("/api/admin/ayarlar")
@@ -262,6 +266,51 @@ export default function AyarlarPage() {
             </div>
           </section>
         ))}
+      </div>
+
+      {/* Rezervasyon Widget Embed Kodu */}
+      <div className="mt-8">
+        <section className="card p-6 space-y-4">
+          <div>
+            <h2 className="uppercase tracking-wider text-sm font-semibold" style={{ color: "var(--text)" }}>
+              Rezervasyon Widget
+            </h2>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              Bu kodu kendi web sitenize yapıştırarak rezervasyon formunu gömebilirsiniz.
+            </p>
+          </div>
+          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            <div className="flex items-center justify-between px-4 py-2" style={{ backgroundColor: "var(--bg)" }}>
+              <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>HTML</span>
+              <button
+                onClick={() => {
+                  const kod = `<iframe\n  src="${originRef.current}/rezervasyon/embed"\n  width="100%"\n  height="700"\n  frameborder="0"\n  style="border-radius:12px;border:1px solid #e2e8f0;"\n  title="Rezervasyon"\n></iframe>`;
+                  navigator.clipboard.writeText(kod);
+                  setEmbedKopyalandi(true);
+                  setTimeout(() => setEmbedKopyalandi(false), 2000);
+                }}
+                className="text-xs px-3 py-1 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: embedKopyalandi ? "#16A34A20" : "var(--bg-card)", color: embedKopyalandi ? "#16A34A" : "var(--text-muted)", border: "1px solid var(--border)" }}>
+                {embedKopyalandi ? "Kopyalandı ✓" : "Kopyala"}
+              </button>
+            </div>
+            <pre className="px-4 py-3 text-xs overflow-x-auto" style={{ backgroundColor: "var(--bg-card)", color: "#22C55E" }}>
+{`<iframe
+  src="${originRef.current || "https://siteniz.com"}/rezervasyon/embed"
+  width="100%"
+  height="700"
+  frameborder="0"
+  style="border-radius:12px;border:1px solid #e2e8f0;"
+  title="Rezervasyon"
+></iframe>`}
+            </pre>
+          </div>
+          <a href="/rezervasyon/embed" target="_blank"
+            className="inline-flex items-center gap-1.5 text-xs font-medium"
+            style={{ color: "#1A73E8" }}>
+            ↗ Önizlemeyi aç
+          </a>
+        </section>
       </div>
     </div>
   );
