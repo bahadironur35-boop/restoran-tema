@@ -106,6 +106,19 @@ model Ayar {
   value String
 }
 
+model Kupon {
+  id           Int       @id @default(autoincrement())
+  kod          String    @unique
+  tur          String    // "yuzde" | "sabit"
+  deger        Float
+  minTutar     Float?    // minimum sepet tutarı
+  kullanimLimit Int?     // null = sınırsız
+  kullanimSayisi Int     @default(0)
+  gecerlilikSonu DateTime?
+  aktif        Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+}
+
 model Kullanici {
   id        Int      @id @default(autoincrement())
   name      String

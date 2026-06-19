@@ -1,10 +1,38 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import QRCode from "qrcode";
 import { useSSE } from "@/lib/useSSE";
 
 type Talep = { id: number; tip: string; durum: string; createdAt: string };
 type Masa = { id: number; no: number; kapasite: number; alan: string; durum: string; aktif: boolean; talepler: Talep[] };
+type Toast = { id: number; masaNo: number; tip: string };
+
+function beep(tip: "garson" | "hesap") {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    // Garson: tek kısa bip | Hesap: iki bip
+    osc.frequency.value = tip === "hesap" ? 660 : 880;
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+    if (tip === "hesap") {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2); gain2.connect(ctx.destination);
+      osc2.frequency.value = 880; osc2.type = "sine";
+      gain2.gain.setValueAtTime(0.4, ctx.currentTime + 0.6);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.1);
+      osc2.start(ctx.currentTime + 0.6);
+      osc2.stop(ctx.currentTime + 1.1);
+    }
+  } catch { /* kullanıcı etkileşimi olmadan AudioContext açılamayabilir */ }
+}
 
 const ALANLAR = ["Salon", "Bahçe", "Teras", "VIP", "Bar"];
 
@@ -24,6 +52,15 @@ export default function MasalarClient() {
   const [qrMap, setQrMap] = useState<Record<number, string>>({});
   const [baseUrl, setBaseUrl] = useState("");
   const [aktifAlan, setAktifAlan] = useState<string>("Tümü");
+  const [toastlar, setToastlar] = useState<Toast[]>([]);
+  const toastCounter = useRef(0);
+  const bildirimlenmisTalepler = useRef<Set<number>>(new Set());
+
+  const addToast = (masaNo: number, tip: string) => {
+    const id = ++toastCounter.current;
+    setToastlar((p) => [...p, { id, masaNo, tip }]);
+    setTimeout(() => setToastlar((p) => p.filter((t) => t.id !== id)), 6000);
+  };
 
   useEffect(() => { setBaseUrl(window.location.origin); }, []);
 
@@ -44,16 +81,29 @@ export default function MasalarClient() {
 
   useEffect(() => { fetchMasalar(); }, [fetchMasalar]);
 
-  // SSE: masa durumu değişince anında güncelle
+  // SSE: masa durumu + yeni talepler
   useSSE("/api/events?scope=masalar", (event, data) => {
     if (event !== "update") return;
     const { masalar: yeni } = data as { masalar: Masa[] };
     if (!yeni) return;
-    setMasalar((prev) => {
-      // Sadece durum değişmişse state'i güncelle
-      const changed = yeni.some((m) => prev.find((p) => p.id === m.id)?.durum !== m.durum);
-      return changed ? prev.map((p) => { const y = yeni.find((m) => m.id === p.id); return y ? { ...p, durum: y.durum } : p; }) : prev;
-    });
+
+    // Yeni bekleyen talepler → ses + toast
+    for (const m of yeni) {
+      for (const t of (m.talepler ?? [])) {
+        if (!bildirimlenmisTalepler.current.has(t.id)) {
+          bildirimlenmisTalepler.current.add(t.id);
+          beep(t.tip === "hesap" ? "hesap" : "garson");
+          addToast(m.no, t.tip);
+        }
+      }
+    }
+
+    setMasalar((prev) =>
+      prev.map((p) => {
+        const y = yeni.find((m) => m.id === p.id);
+        return y ? { ...p, durum: y.durum, talepler: y.talepler ?? p.talepler } : p;
+      })
+    );
   });
 
   const addMasa = async (e: React.FormEvent) => {
@@ -121,6 +171,27 @@ export default function MasalarClient() {
   const temizleniyorMasa = masalar.filter((m) => m.durum === "temizleniyor").length;
 
   return (
+    <div className="relative">
+
+      {/* Toast bildirimleri */}
+      <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {toastlar.map((t) => (
+          <div key={t.id}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-semibold animate-bounce"
+            style={{
+              backgroundColor: t.tip === "hesap" ? "#F59E0B" : "#1A73E8",
+              minWidth: "200px",
+              pointerEvents: "auto",
+            }}>
+            <span className="text-lg">{t.tip === "hesap" ? "💳" : "🔔"}</span>
+            <div>
+              <p>{t.tip === "hesap" ? "Hesap İstendi" : "Garson Çağrıldı"}</p>
+              <p className="text-xs font-normal opacity-80">Masa {t.masaNo}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
       {/* Sol panel */}
@@ -305,6 +376,7 @@ export default function MasalarClient() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

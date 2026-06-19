@@ -27,7 +27,13 @@ export async function GET(req: NextRequest) {
         try {
           const [masalar, siparisler] = await Promise.all([
             (scope === "all" || scope === "masalar")
-              ? prisma.masa.findMany({ orderBy: [{ alan: "asc" }, { no: "asc" }], select: { id: true, no: true, alan: true, durum: true, kapasite: true } })
+              ? prisma.masa.findMany({
+                  orderBy: [{ alan: "asc" }, { no: "asc" }],
+                  select: {
+                    id: true, no: true, alan: true, durum: true, kapasite: true,
+                    talepler: { where: { durum: "bekliyor" }, select: { id: true, tip: true, createdAt: true } },
+                  },
+                })
               : Promise.resolve(null),
             (scope === "all" || scope === "siparisler")
               ? prisma.siparis.findMany({

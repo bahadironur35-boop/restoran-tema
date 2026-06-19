@@ -49,6 +49,13 @@ export default function KasaClient() {
   const [fis, setFis]             = useState<FisData | null>(null);
   const [restaurantName, setRestaurantName] = useState("EatOs");
   const fisRef = useRef<HTMLDivElement>(null);
+  // İndirim state'leri
+  const [indirimTur, setIndirimTur]     = useState<"yuzde" | "sabit">("yuzde");
+  const [indirimDeger, setIndirimDeger] = useState("");
+  const [kuponKod, setKuponKod]         = useState("");
+  const [kuponHata, setKuponHata]       = useState("");
+  const [kuponOk, setKuponOk]           = useState("");
+  const [indirimTutari, setIndirimTutari] = useState(0);
 
   // --- Adisyon bölme state'leri ---
   const [bolModal, setBolModal]       = useState(false);
@@ -85,13 +92,38 @@ export default function KasaClient() {
     return () => clearInterval(iv);
   }, [fetchMasalar]);
 
+  const hesaplaIndirim = (tutar: number) => {
+    const d = parseFloat(indirimDeger);
+    if (!d || d <= 0) return 0;
+    if (indirimTur === "yuzde") return Math.min((tutar * d) / 100, tutar);
+    return Math.min(d, tutar);
+  };
+
+  const kuponDogrula = async () => {
+    if (!secili || !kuponKod) return;
+    setKuponHata(""); setKuponOk("");
+    const res = await fetch("/api/admin/kuponlar/dogrula", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kod: kuponKod, tutar: secili.tutar }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setKuponHata(data.error); return; }
+    setIndirimTutari(data.indirimTutari);
+    setKuponOk(`✓ ${data.kupon.tur === "yuzde" ? `%${data.kupon.deger}` : fmt(data.kupon.deger)} indirim uygulandı`);
+  };
+
   const odemeAl = async () => {
     if (!secili) return;
     setOdemeLoading(true);
+    const manuelIndirim = hesaplaIndirim(secili.tutar);
+    const toplamIndirim = kuponKod && indirimTutari > 0 ? indirimTutari : manuelIndirim;
+    const odenecek = Math.max(0, secili.tutar - toplamIndirim);
+    const indirimNot = toplamIndirim > 0 ? `İndirim: ${fmt(toplamIndirim)}${kuponKod ? ` (${kuponKod})` : ""}` : "";
     await fetch("/api/admin/kasa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ masaId: secili.id, tutar: secili.tutar, yontem, notlar }),
+      body: JSON.stringify({ masaId: secili.id, tutar: odenecek, yontem, notlar: [notlar, indirimNot].filter(Boolean).join(" · ") }),
     });
     setOdemeLoading(false);
     setOdemeAlindi(true);
@@ -110,6 +142,11 @@ export default function KasaClient() {
     setSecili(null);
     setNotlar("");
     setYontem("nakit");
+    setIndirimDeger("");
+    setKuponKod("");
+    setKuponHata("");
+    setKuponOk("");
+    setIndirimTutari(0);
     fetchMasalar();
   };
 
@@ -303,11 +340,60 @@ export default function KasaClient() {
                 </div>
               ))}
 
-              {/* Toplam */}
-              <div className="border-t pt-3 flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
-                <span className="font-bold" style={{ color: "var(--text)" }}>Toplam</span>
-                <span className="text-2xl font-bold" style={{ color: "#22C55E" }}>{fmt(secili.tutar)}</span>
+              {/* İndirim */}
+              <div className="border-t pt-3 space-y-3" style={{ borderColor: "var(--border)" }}>
+                <p className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>İndirim</p>
+
+                {/* Manuel indirim */}
+                <div className="flex gap-2">
+                  <select value={indirimTur} onChange={(e) => { setIndirimTur(e.target.value as "yuzde"|"sabit"); setIndirimDeger(""); }}
+                    className="input-field text-sm px-2 py-1.5 w-20">
+                    <option value="yuzde">%</option>
+                    <option value="sabit">₺</option>
+                  </select>
+                  <input value={indirimDeger} onChange={(e) => { setIndirimDeger(e.target.value); setKuponKod(""); setKuponOk(""); setIndirimTutari(0); }}
+                    className="input-field flex-1 text-sm" type="number" min="0"
+                    placeholder={indirimTur === "yuzde" ? "Yüzde (ör. 10)" : "Tutar (ör. 50)"} />
+                </div>
+
+                {/* Kupon kodu */}
+                <div className="flex gap-2">
+                  <input value={kuponKod} onChange={(e) => { setKuponKod(e.target.value.toUpperCase()); setIndirimDeger(""); setKuponHata(""); setKuponOk(""); setIndirimTutari(0); }}
+                    className="input-field flex-1 text-sm font-mono" placeholder="KUPON KODU" />
+                  <button onClick={kuponDogrula}
+                    className="px-3 py-1.5 text-xs font-bold rounded-lg text-white"
+                    style={{ backgroundColor: "#1A73E8" }}>Uygula</button>
+                </div>
+                {kuponHata && <p className="text-xs" style={{ color: "#EF4444" }}>{kuponHata}</p>}
+                {kuponOk && <p className="text-xs font-medium" style={{ color: "#22C55E" }}>{kuponOk}</p>}
               </div>
+
+              {/* Toplam */}
+              {(() => {
+                const manuelIndirim = hesaplaIndirim(secili.tutar);
+                const toplamIndirim = kuponKod && indirimTutari > 0 ? indirimTutari : manuelIndirim;
+                const odenecek = Math.max(0, secili.tutar - toplamIndirim);
+                return (
+                  <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "var(--border)" }}>
+                    {toplamIndirim > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span style={{ color: "var(--text-muted)" }}>Ara Toplam</span>
+                        <span style={{ color: "var(--text-muted)", textDecoration: "line-through" }}>{fmt(secili.tutar)}</span>
+                      </div>
+                    )}
+                    {toplamIndirim > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span style={{ color: "#EF4444" }}>İndirim</span>
+                        <span style={{ color: "#EF4444" }}>−{fmt(toplamIndirim)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold" style={{ color: "var(--text)" }}>Ödenecek</span>
+                      <span className="text-2xl font-bold" style={{ color: "#22C55E" }}>{fmt(odenecek)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Ödeme yöntemi */}
               <div>
@@ -378,14 +464,19 @@ export default function KasaClient() {
                     className="w-full py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-opacity disabled:opacity-50"
                     style={{ backgroundColor: yontemler.find((y) => y.key === yontem)?.color ?? "#16A34A" }}
                   >
-                    {odemeLoading ? "İşleniyor..." : (
-                      <>
-                        {yontem === "nakit" && <Banknote size={16} />}
-                        {yontem === "kart"  && <CreditCard size={16} />}
-                        {yontem === "havale" && <Building2 size={16} />}
-                        {fmt(secili.tutar)} · Ödemeyi Al
-                      </>
-                    )}
+                    {odemeLoading ? "İşleniyor..." : (() => {
+                      const manuelIndirim = hesaplaIndirim(secili.tutar);
+                      const toplamIndirim = kuponKod && indirimTutari > 0 ? indirimTutari : manuelIndirim;
+                      const odenecek = Math.max(0, secili.tutar - toplamIndirim);
+                      return (
+                        <>
+                          {yontem === "nakit" && <Banknote size={16} />}
+                          {yontem === "kart"  && <CreditCard size={16} />}
+                          {yontem === "havale" && <Building2 size={16} />}
+                          {fmt(odenecek)} · Ödemeyi Al
+                        </>
+                      );
+                    })()}
                   </button>
                   <button onClick={bolAc}
                     className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
