@@ -194,11 +194,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 title={isCollapsed ? item.label : undefined}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
                 style={{
+                  fontFamily: '"Segoe UI", "Segoe UI Variable", Inter, ui-sans-serif, system-ui, sans-serif',
                   fontSize: "13px",
+                  lineHeight: "20px",
+                  fontWeight: 550,
                   justifyContent: isCollapsed ? "center" : undefined,
                   ...(active
-                    ? { backgroundColor: ACTIVE, color: TEXT_A, fontWeight: 500 }
-                    : { color: TEXT, fontWeight: 400 }),
+                    ? { backgroundColor: ACTIVE, color: TEXT_A }
+                    : { color: TEXT }),
                 }}>
                 <Icon size={15} strokeWidth={active ? 2 : 1.5}
                   style={{ color: active ? "#fff" : TEXT, flexShrink: 0 }} />
