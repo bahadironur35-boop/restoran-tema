@@ -21,6 +21,7 @@ const navItems: { href: string; label: string; icon: React.ElementType; roles: R
   { href: "/admin/plan",           label: "Masa Planı",       icon: LayoutTemplate,  roles: ["admin","mudur","garson"] },
   { href: "/admin/pos",            label: "Satış Ekranı",     icon: ShoppingCart,    roles: ["admin","mudur","garson"] },
   { href: "/admin/siparisler",     label: "Siparişler",       icon: ClipboardList,   roles: ["admin","mudur","garson","sef"] },
+  { href: "/mutfak",               label: "Mutfak Ekranı",    icon: ChefHat,         roles: ["admin","mudur","sef"],          modul: "kdsAktif" },
   { href: "/admin/kasa",           label: "Kasa",             icon: Wallet,          roles: ["admin","mudur"],               modul: "kasaAktif" },
   { href: "/admin/menu",           label: "Menü Yönetimi",    icon: UtensilsCrossed, roles: ["admin","mudur"] },
   { href: "/admin/galeri",         label: "Galeri",           icon: Images,          roles: ["admin","mudur"],               modul: "galeriAktif" },

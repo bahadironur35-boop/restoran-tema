@@ -9,7 +9,7 @@ type CartItem = { menuItemId: number; name: string; price: string; adet: number;
 
 const CATEGORIES = ["Başlangıçlar", "Ana Yemekler", "Tatlılar", "İçecekler"];
 
-type Tab = "menu" | "sepet" | "cagir";
+type Tab = "menu" | "sepet" | "cagir" | "kart";
 
 export default function MasaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -29,6 +29,13 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
   const [talepAktif, setTalepAktif] = useState(true);
   const [fiyatGoster, setFiyatGoster] = useState(true);
   const [notAktif, setNotAktif] = useState(true);
+  // Sadakat / damga kart
+  const [sadakatAktif, setSadakatAktif] = useState(false);
+  const [damgaAktif, setDamgaAktif] = useState(false);
+  const [damgaSayisi, setDamgaSayisi] = useState(10);
+  const [damgaOdul, setDamgaOdul] = useState("1 Bedava Ürün");
+  const [mevcutDamga, setMevcutDamga] = useState(0);
+  const [odulKazanildi, setOdulKazanildi] = useState(false);
   const { durum: pushDurum, abone } = usePushAbonelik("musteri", parseInt(id));
   const [tema, setTema] = useState({
     restaurantName: "EatOs",
@@ -59,6 +66,10 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
       if (data.qrMasaTalebiAktif === "false") setTalepAktif(false);
       if (data.qrFiyatGoster === "false") setFiyatGoster(false);
       if (data.qrSiparisNotuAktif === "false") setNotAktif(false);
+      if (data.sadakatAktif === "true") setSadakatAktif(true);
+      if (data.sadakatDamgaAktif === "true") setDamgaAktif(true);
+      if (data.damgaSayisi) setDamgaSayisi(parseInt(data.damgaSayisi) || 10);
+      if (data.damgaOdul) setDamgaOdul(data.damgaOdul);
     });
     fetch("/api/tema").then((r) => r.json()).then((t) => setTema((p) => ({ ...p, ...t })));
     fetch("/api/admin/masalar").then((r) => r.json()).then((data) => {
@@ -66,6 +77,29 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
       if (found) setMasaInfo({ no: found.no, alan: found.alan, kapasite: found.kapasite });
     });
   }, [id]);
+
+  // Damga sayısını localStorage'dan yükle
+  useEffect(() => {
+    const key = `damga_${id}`;
+    const saved = parseInt(localStorage.getItem(key) ?? "0") || 0;
+    setMevcutDamga(saved);
+    setOdulKazanildi(saved >= damgaSayisi && damgaSayisi > 0);
+  }, [id, damgaSayisi]);
+
+  const damgaEkle = () => {
+    const key = `damga_${id}`;
+    const yeni = Math.min(mevcutDamga + 1, damgaSayisi);
+    localStorage.setItem(key, String(yeni));
+    setMevcutDamga(yeni);
+    if (yeni >= damgaSayisi) setOdulKazanildi(true);
+  };
+
+  const damgaSifirla = () => {
+    const key = `damga_${id}`;
+    localStorage.setItem(key, "0");
+    setMevcutDamga(0);
+    setOdulKazanildi(false);
+  };
 
   // Sipariş hazır bildirimi — SSE ile anlık
   useEffect(() => {
@@ -202,8 +236,8 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
 
       {/* Tab bar */}
       <div className="sticky top-[57px] z-10 border-b border-white/10 flex" style={{ backgroundColor: BG }}>
-        {(["menu", ...(qrAktif ? ["sepet"] : []), ...(talepAktif ? ["cagir"] : [])] as Tab[]).map((tab) => {
-          const labels: Record<Tab, string> = { menu: "Menü", sepet: hasOrdered ? `Siparişe Ekle${cartCount > 0 ? ` (${cartCount})` : ""}` : `Sipariş Ver${cartCount > 0 ? ` (${cartCount})` : ""}`, cagir: "Çağır" };
+        {(["menu", ...(qrAktif ? ["sepet"] : []), ...(talepAktif ? ["cagir"] : []), ...((sadakatAktif && damgaAktif) ? ["kart"] : [])] as Tab[]).map((tab) => {
+          const labels: Record<Tab, string> = { menu: "Menü", sepet: hasOrdered ? `Siparişe Ekle${cartCount > 0 ? ` (${cartCount})` : ""}` : `Sipariş Ver${cartCount > 0 ? ` (${cartCount})` : ""}`, cagir: "Çağır", kart: "Kartım" };
           return (
             <button
               key={tab}
@@ -417,6 +451,61 @@ export default function MasaPage({ params }: { params: Promise<{ id: string }> }
                   {sending ? "Gönderiliyor..." : hasOrdered ? "Siparişe Ekle" : "Sipariş Ver"}
                 </button>
               </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* DAMGA KARTI TAB */}
+      {activeTab === "kart" && (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 max-w-sm mx-auto w-full gap-6 py-8">
+          {odulKazanildi ? (
+            <div className="text-center space-y-4">
+              <div className="text-7xl">🎉</div>
+              <h2 className="text-xl font-bold text-white">Tebrikler!</h2>
+              <p className="text-sm" style={{ color: "#aaa" }}>
+                {damgaSayisi} damganızı tamamladınız!<br />
+                Ödülünüz: <span style={{ color: BC }} className="font-semibold">{damgaOdul}</span>
+              </p>
+              <p className="text-xs" style={{ color: "#666" }}>Ödülünüzü kullanmak için garsonumuzu çağırın.</p>
+              <button onClick={damgaSifirla}
+                className="mt-2 px-6 py-3 rounded-xl text-sm font-semibold"
+                style={{ backgroundColor: "#1A1A1A", color: "#888", border: "1px solid #2A2A2A" }}>
+                Yeni Kart Başlat
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#666" }}>Sadakat Kartı</p>
+                <h2 className="text-lg font-bold text-white">{tema.restaurantName}</h2>
+                <p className="text-xs mt-1" style={{ color: "#888" }}>
+                  {damgaSayisi} ziyarette: <span style={{ color: BC }}>{damgaOdul}</span>
+                </p>
+              </div>
+
+              {/* Damga grid */}
+              <div className="w-full rounded-2xl p-5" style={{ backgroundColor: "#111", border: "1px solid #222" }}>
+                <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(damgaSayisi, 5)}, 1fr)` }}>
+                  {Array.from({ length: damgaSayisi }).map((_, i) => (
+                    <div key={i} className="aspect-square rounded-xl flex items-center justify-center text-2xl transition-all"
+                      style={{
+                        backgroundColor: i < mevcutDamga ? BC + "30" : "#1A1A1A",
+                        border: `2px solid ${i < mevcutDamga ? BC : "#2A2A2A"}`,
+                        fontSize: damgaSayisi > 8 ? "16px" : "24px",
+                      }}>
+                      {i < mevcutDamga ? "☕" : ""}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-xs mt-4" style={{ color: "#666" }}>
+                  {mevcutDamga} / {damgaSayisi} damga
+                </p>
+              </div>
+
+              <p className="text-xs text-center" style={{ color: "#555" }}>
+                Garsoununuzdan damga eklemesini isteyin
+              </p>
             </>
           )}
         </div>

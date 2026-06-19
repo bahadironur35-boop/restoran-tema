@@ -21,6 +21,10 @@ export default async function AdminDashboard() {
   haftaBaslangic.setDate(haftaBaslangic.getDate() - 6);
   haftaBaslangic.setHours(0, 0, 0, 0);
 
+  const bugunBaslangic = new Date(); bugunBaslangic.setHours(0, 0, 0, 0);
+  const dunBaslangic = new Date(bugunBaslangic); dunBaslangic.setDate(dunBaslangic.getDate() - 1);
+  const dunBitis = new Date(bugunBaslangic);
+
   const [
     bugunRezervasyonlar,
     bekleyenRezervasyonlar,
@@ -33,6 +37,8 @@ export default async function AdminDashboard() {
     acikSiparisDetay,
     populerUrunler,
     kritikStoklar,
+    bugunSiparisler,
+    dunSiparisler,
   ] = await Promise.all([
     prisma.rezervasyon.count({ where: { date: bugun } }),
     prisma.rezervasyon.count({ where: { status: "bekliyor" } }),
@@ -61,6 +67,14 @@ export default async function AdminDashboard() {
     prisma.$queryRaw<{ id: number; name: string; miktar: number; minMiktar: number; birim: string }[]>`
       SELECT id, name, miktar, "minMiktar", birim FROM "StokItem" WHERE miktar <= "minMiktar" ORDER BY miktar ASC LIMIT 5
     `.catch(() => []),
+    prisma.siparis.findMany({
+      where: { durum: "teslim", createdAt: { gte: bugunBaslangic } },
+      include: { items: true },
+    }),
+    prisma.siparis.findMany({
+      where: { durum: "teslim", createdAt: { gte: dunBaslangic, lt: dunBitis } },
+      include: { items: true },
+    }),
   ]);
 
   // Hesaplamalar
@@ -72,6 +86,13 @@ export default async function AdminDashboard() {
   const haftaGelir = haftaSiparisler.reduce((sum, s) =>
     sum + s.items.reduce((acc, item) => acc + parsePrice(item.price) * item.adet, 0), 0
   );
+  const bugunGelir = bugunSiparisler.reduce((sum, s) =>
+    sum + s.items.reduce((acc, item) => acc + parsePrice(item.price) * item.adet, 0), 0
+  );
+  const dunGelir = dunSiparisler.reduce((sum, s) =>
+    sum + s.items.reduce((acc, item) => acc + parsePrice(item.price) * item.adet, 0), 0
+  );
+  const gelirFark = dunGelir > 0 ? Math.round(((bugunGelir - dunGelir) / dunGelir) * 100) : null;
 
   const stats = [
     { label: "Bugün Rezervasyon", value: bugunRezervasyonlar, icon: Calendar,       color: "#1A73E8", bg: "#1A73E815", href: "/admin/rezervasyonlar" },
@@ -182,18 +203,40 @@ export default async function AdminDashboard() {
             <p className="text-xs mt-1.5 text-right" style={{ color: "var(--text-muted)" }}>%{dolulukOrani} dolu</p>
           </div>
 
-          {/* Haftalık gelir */}
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="font-semibold" style={{ color: "var(--text)" }}>Haftalık Gelir</h2>
-              <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "#22C55E15", color: "#22C55E" }}>7 gün</span>
+          {/* Bugün / Haftalık gelir */}
+          <div className="card p-5 space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-semibold" style={{ color: "var(--text)" }}>Bugünkü Gelir</h2>
+                {gelirFark !== null && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={gelirFark >= 0
+                      ? { backgroundColor: "#22C55E15", color: "#22C55E" }
+                      : { backgroundColor: "#EF444415", color: "#EF4444" }}>
+                    {gelirFark >= 0 ? "+" : ""}{gelirFark}% dünden
+                  </span>
+                )}
+              </div>
+              <p className="text-3xl font-bold" style={{ color: "#22C55E" }}>
+                ₺{bugunGelir.toLocaleString("tr-TR", { minimumFractionDigits: 0 })}
+              </p>
+              {dunGelir > 0 && (
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  Dün: ₺{dunGelir.toLocaleString("tr-TR", { minimumFractionDigits: 0 })}
+                </p>
+              )}
             </div>
-            <p className="text-3xl font-bold mt-2" style={{ color: "#22C55E" }}>
-              ₺{haftaGelir.toLocaleString("tr-TR", { minimumFractionDigits: 0 })}
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              {haftaSiparisler.length} teslim edilmiş sipariş
-            </p>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>Haftalık</span>
+                <span className="font-bold text-sm" style={{ color: "var(--text)" }}>
+                  ₺{haftaGelir.toLocaleString("tr-TR", { minimumFractionDigits: 0 })}
+                </span>
+              </div>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                {haftaSiparisler.length} sipariş · 7 gün
+              </p>
+            </div>
           </div>
         </div>
       </div>
