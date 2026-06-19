@@ -3,6 +3,7 @@
 /* Sidebar nav hover */
 .sidebar-nav-link:not([style*="background"]):hover {
   color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
 }
 .sidebar-nav-link:not([style*="background"]):hover svg {
   color: #ffffff !important;
