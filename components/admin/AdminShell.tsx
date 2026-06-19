@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat, UserCog } from "lucide-react";
+import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat, UserCog, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   LayoutDashboard, Calendar, Armchair, ShoppingCart,
   ClipboardList, UtensilsCrossed, Images, Users,
@@ -83,6 +83,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [me, setMe] = useState<{ name: string; email: string; role: string } | null>(null);
   const [shellToastlar, setShellToastlar] = useState<ShellToast[]>([]);
   const [moduller, setModuller] = useState<Record<string, string>>({});
@@ -148,24 +149,40 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     router.push("/admin/login");
   };
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ isCollapsed = false }: { isCollapsed?: boolean }) => (
     <>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 flex-shrink-0" style={{ borderBottom: `1px solid ${BORDER}` }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
-          <ChefHat size={15} color="white" strokeWidth={1.5} />
+      <div className="flex items-center h-16 flex-shrink-0 relative"
+        style={{ borderBottom: `1px solid ${BORDER}`, padding: isCollapsed ? "0 12px" : "0 16px" }}>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+            <ChefHat size={15} color="white" strokeWidth={1.5} />
+          </div>
+          {!isCollapsed && (
+            <div className="min-w-0">
+              <p className="font-bold text-white leading-tight" style={{ fontSize: "14px" }}>EatOs</p>
+              <p style={{ fontSize: "9px", color: TEXT, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 500 }}>
+                Restaurant POS
+              </p>
+            </div>
+          )}
         </div>
-        <div>
-          <p className="font-bold text-white leading-tight" style={{ fontSize: "14px" }}>EatOs</p>
-          <p style={{ fontSize: "9px", color: TEXT, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 500 }}>
-            Restaurant POS
-          </p>
-        </div>
+        {/* Daralt / Genişlet butonu — sadece desktop */}
+        <button
+          onClick={() => setCollapsed((p) => !p)}
+          className="hidden lg:flex w-6 h-6 items-center justify-center rounded-md transition-colors hover:bg-white/10 flex-shrink-0"
+          title={isCollapsed ? "Genişlet" : "Daralt"}
+        >
+          {isCollapsed
+            ? <ChevronRight size={14} color={TEXT} />
+            : <ChevronLeft size={14} color={TEXT} />
+          }
+        </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 pt-3 space-y-0.5 overflow-y-auto pb-4">
+      <nav className="flex-1 pt-3 space-y-0.5 overflow-y-auto pb-4" style={{ padding: isCollapsed ? "12px 8px 16px" : "12px 8px 16px" }}>
         {navItems
           .filter((item) => !me || item.roles.includes(me.role as Role))
           .filter((item) => !item.modul || moduller[item.modul] !== "false")
@@ -174,13 +191,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             const Icon = item.icon;
             return (
               <Link key={item.href} href={item.href}
+                title={isCollapsed ? item.label : undefined}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
-                style={{ fontSize: "13px", ...(active
-                  ? { backgroundColor: ACTIVE, color: TEXT_A, fontWeight: 500 }
-                  : { color: TEXT, fontWeight: 400 }) }}>
+                style={{
+                  fontSize: "13px",
+                  justifyContent: isCollapsed ? "center" : undefined,
+                  ...(active
+                    ? { backgroundColor: ACTIVE, color: TEXT_A, fontWeight: 500 }
+                    : { color: TEXT, fontWeight: 400 }),
+                }}>
                 <Icon size={15} strokeWidth={active ? 2 : 1.5}
                   style={{ color: active ? "#fff" : TEXT, flexShrink: 0 }} />
-                {item.label}
+                {!isCollapsed && item.label}
               </Link>
             );
           })}
@@ -192,9 +214,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-52 flex-col z-40"
-        style={{ backgroundColor: BG, borderRight: `1px solid ${BORDER}` }}>
-        <SidebarContent />
+      <aside
+        className="hidden lg:flex fixed left-0 top-0 h-full flex-col z-40 transition-all duration-200"
+        style={{ width: collapsed ? 56 : 208, backgroundColor: BG, borderRight: `1px solid ${BORDER}` }}
+      >
+        <SidebarContent isCollapsed={collapsed} />
       </aside>
 
       {/* Mobile overlay */}
@@ -217,7 +241,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       )}
 
       {/* Main */}
-      <main className="flex-1 lg:ml-52 flex flex-col min-h-screen">
+      <main
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-200 ${collapsed ? "lg:ml-14" : "lg:ml-52"}`}
+      >
 
         {/* Header */}
         <header className="flex items-center justify-between px-4 sm:px-6 flex-shrink-0"

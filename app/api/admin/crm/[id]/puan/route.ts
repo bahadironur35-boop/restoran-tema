@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { isAuthenticated } from "@/lib/auth";
 
 // Puan geçmişi
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   const hareketler = await prisma.puanHareket.findMany({
-    where: { musteriId: parseInt(params.id) },
+    where: { musteriId: parseInt((await params).id) },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -14,10 +14,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // Manuel puan ekle / düş
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   const { miktar, aciklama } = await req.json();
-  const musteriId = parseInt(params.id);
+  const musteriId = parseInt((await params).id);
 
   await prisma.$transaction([
     prisma.puanHareket.create({
