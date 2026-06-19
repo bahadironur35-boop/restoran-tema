@@ -106,6 +106,16 @@ model Ayar {
   value String
 }
 
+model Kullanici {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("garson") // admin | mudur | garson | sef
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
 model Masa {
   id           Int            @id @default(autoincrement())
   no           Int            @unique

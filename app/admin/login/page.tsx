@@ -3,9 +3,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLogin() {
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -15,12 +16,13 @@ export default function AdminLogin() {
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ email: email || undefined, password }),
     });
     if (res.ok) {
       router.push("/admin");
     } else {
-      setError("Şifre hatalı.");
+      const data = await res.json();
+      setError(data.error || "Giriş başarısız.");
       setLoading(false);
     }
   };
@@ -34,13 +36,24 @@ export default function AdminLogin() {
         </div>
         <form onSubmit={handleSubmit} className="p-8 space-y-4 rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
           <div>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>E-posta</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoFocus
+              className="input-field w-full"
+              placeholder="garson@restoran.com"
+            />
+            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>Boş bırakırsanız master şifre ile giriş yapılır</p>
+          </div>
+          <div>
             <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>Şifre</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoFocus
               className="input-field w-full"
               placeholder="••••••••"
             />

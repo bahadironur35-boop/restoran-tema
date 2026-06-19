@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { isAuthenticated } from "@/lib/auth";
+import { hasRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import MenuYonetim from "@/components/admin/MenuYonetim";
 
 export default async function AdminMenuPage() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await hasRole("admin","mudur"))) redirect("/admin");
 
   const items = await prisma.menuItem.findMany({ orderBy: [{ category: "asc" }, { order: "asc" }] });
 

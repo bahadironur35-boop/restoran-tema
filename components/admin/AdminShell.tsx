@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat } from "lucide-react";
+import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat, UserCog } from "lucide-react";
 import {
   LayoutDashboard, Calendar, Armchair, ShoppingCart,
   ClipboardList, UtensilsCrossed, Images, Users,
@@ -11,22 +11,25 @@ import {
 import { useEffect } from "react";
 import CalendarDropdown from "./CalendarDropdown";
 
-const navItems = [
-  { href: "/admin",                label: "Dashboard",        icon: LayoutDashboard },
-  { href: "/admin/rezervasyonlar", label: "Rezervasyonlar",   icon: Calendar },
-  { href: "/admin/masalar",        label: "Masa & QR",        icon: Armchair },
-  { href: "/admin/plan",           label: "Masa Planı",       icon: LayoutTemplate },
-  { href: "/admin/pos",            label: "Satış Ekranı",     icon: ShoppingCart },
-  { href: "/admin/siparisler",     label: "Siparişler",       icon: ClipboardList },
-  { href: "/admin/kasa",           label: "Kasa",             icon: Wallet },
-  { href: "/admin/menu",           label: "Menü Yönetimi",    icon: UtensilsCrossed },
-  { href: "/admin/galeri",         label: "Galeri",           icon: Images },
-  { href: "/admin/icerik",         label: "İçerik Yönetimi",  icon: Layers },
-  { href: "/admin/crm",            label: "Müşteri CRM",      icon: Users },
-  { href: "/admin/stok",           label: "Stok Takibi",      icon: Package },
-  { href: "/admin/raporlar",       label: "Raporlar",         icon: BarChart2 },
-  { href: "/admin/ayarlar",        label: "Ayarlar",          icon: Settings },
-  { href: "/admin/kurulum",        label: "Kurulum Rehberi",  icon: BookOpen },
+type Role = "admin" | "mudur" | "garson" | "sef";
+
+const navItems: { href: string; label: string; icon: React.ElementType; roles: Role[] }[] = [
+  { href: "/admin",                label: "Dashboard",        icon: LayoutDashboard, roles: ["admin","mudur","garson","sef"] },
+  { href: "/admin/rezervasyonlar", label: "Rezervasyonlar",   icon: Calendar,        roles: ["admin","mudur","garson"] },
+  { href: "/admin/masalar",        label: "Masa & QR",        icon: Armchair,        roles: ["admin","mudur","garson"] },
+  { href: "/admin/plan",           label: "Masa Planı",       icon: LayoutTemplate,  roles: ["admin","mudur","garson"] },
+  { href: "/admin/pos",            label: "Satış Ekranı",     icon: ShoppingCart,    roles: ["admin","mudur","garson"] },
+  { href: "/admin/siparisler",     label: "Siparişler",       icon: ClipboardList,   roles: ["admin","mudur","garson","sef"] },
+  { href: "/admin/kasa",           label: "Kasa",             icon: Wallet,          roles: ["admin","mudur"] },
+  { href: "/admin/menu",           label: "Menü Yönetimi",    icon: UtensilsCrossed, roles: ["admin","mudur"] },
+  { href: "/admin/galeri",         label: "Galeri",           icon: Images,          roles: ["admin","mudur"] },
+  { href: "/admin/icerik",         label: "İçerik Yönetimi",  icon: Layers,          roles: ["admin","mudur"] },
+  { href: "/admin/crm",            label: "Müşteri CRM",      icon: Users,           roles: ["admin","mudur"] },
+  { href: "/admin/stok",           label: "Stok Takibi",      icon: Package,         roles: ["admin","mudur"] },
+  { href: "/admin/raporlar",       label: "Raporlar",         icon: BarChart2,       roles: ["admin","mudur"] },
+  { href: "/admin/ayarlar",        label: "Ayarlar",          icon: Settings,        roles: ["admin"] },
+  { href: "/admin/kullanicilar",   label: "Kullanıcılar",     icon: UserCog,         roles: ["admin"] },
+  { href: "/admin/kurulum",        label: "Kurulum Rehberi",  icon: BookOpen,        roles: ["admin"] },
 ];
 
 const titles: Record<string, string> = {
@@ -73,9 +76,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [me, setMe] = useState<{ name: string; email: string; role: string } | null>(null);
 
-  // pathname değişince mobil menüyü kapat
   useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    fetch("/api/admin/me").then((r) => r.ok ? r.json() : null).then(setMe);
+  }, []);
 
   const title = titles[pathname] ?? "Yönetim Paneli";
 
@@ -102,21 +108,23 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
       {/* Nav */}
       <nav className="flex-1 px-2 pt-3 space-y-0.5 overflow-y-auto pb-4">
-        {navItems.map((item) => {
-          const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-          const Icon = item.icon;
-          return (
-            <Link key={item.href} href={item.href}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
-              style={{ fontSize: "13px", ...(active
-                ? { backgroundColor: ACTIVE, color: TEXT_A, fontWeight: 500 }
-                : { color: TEXT, fontWeight: 400 }) }}>
-              <Icon size={15} strokeWidth={active ? 2 : 1.5}
-                style={{ color: active ? "#fff" : TEXT, flexShrink: 0 }} />
-              {item.label}
-            </Link>
-          );
-        })}
+        {navItems
+          .filter((item) => !me || item.roles.includes(me.role as Role))
+          .map((item) => {
+            const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
+                style={{ fontSize: "13px", ...(active
+                  ? { backgroundColor: ACTIVE, color: TEXT_A, fontWeight: 500 }
+                  : { color: TEXT, fontWeight: 400 }) }}>
+                <Icon size={15} strokeWidth={active ? 2 : 1.5}
+                  style={{ color: active ? "#fff" : TEXT, flexShrink: 0 }} />
+                {item.label}
+              </Link>
+            );
+          })}
       </nav>
     </>
   );
@@ -189,13 +197,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <div className="hidden sm:flex items-center gap-2">
               <div className="relative">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                  style={{ backgroundColor: "#1A73E8" }}>A</div>
+                  style={{ backgroundColor: "#1A73E8" }}>
+                  {me?.name?.[0]?.toUpperCase() ?? "A"}
+                </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white"
                   style={{ backgroundColor: "#22C55E" }} />
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-semibold leading-tight" style={{ color: "#1A2332" }}>Admin</p>
-                <p className="text-xs" style={{ color: "#94A3B8" }}>Yönetici</p>
+                <p className="text-sm font-semibold leading-tight" style={{ color: "#1A2332" }}>{me?.name ?? "Admin"}</p>
+                <p className="text-xs capitalize" style={{ color: "#94A3B8" }}>{me?.role ?? "admin"}</p>
               </div>
             </div>
           </div>

@@ -1,9 +1,9 @@
-import { isAuthenticated } from "@/lib/auth";
+import { hasRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import StokClient from "@/components/admin/StokClient";
 
 export default async function StokPage() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await hasRole("admin","mudur"))) redirect("/admin");
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">Stok Takibi</h1>

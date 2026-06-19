@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { isAuthenticated } from "@/lib/auth";
+import { hasRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import GaleriYonetim from "@/components/admin/GaleriYonetim";
 
 export default async function AdminGaleriPage() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await hasRole("admin","mudur"))) redirect("/admin");
 
   const items = await prisma.galeriItem.findMany({ orderBy: { order: "asc" } });
 
