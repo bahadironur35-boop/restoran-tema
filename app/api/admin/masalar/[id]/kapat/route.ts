@@ -14,7 +14,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     }),
     prisma.masa.update({
       where: { id: masaId },
-      data: { durum: "bos" },
+      data: { durum: "temizleniyor" },
     }),
   ]);
 

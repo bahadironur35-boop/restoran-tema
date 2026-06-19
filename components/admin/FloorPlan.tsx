@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 type Masa = { id: number; no: number; kapasite: number; alan: string; durum: string; posX: number; posY: number };
 
 const DURUM = {
-  bos:       { label: "Boş",       color: "#16A34A", bg: "#16A34A22", border: "#16A34A" },
-  dolu:      { label: "Dolu",      color: "#EF4444", bg: "#EF444422", border: "#EF4444" },
-  rezerveli: { label: "Rezerveli", color: "#F59E0B", bg: "#F59E0B22", border: "#F59E0B" },
+  bos:          { label: "Boş",          color: "#16A34A", bg: "#16A34A22", border: "#16A34A" },
+  dolu:         { label: "Dolu",         color: "#EF4444", bg: "#EF444422", border: "#EF4444" },
+  temizleniyor: { label: "Temizleniyor", color: "#8B5CF6", bg: "#8B5CF622", border: "#8B5CF6" },
+  rezerveli:    { label: "Rezerveli",    color: "#F59E0B", bg: "#F59E0B22", border: "#F59E0B" },
 };
 
 const CANVAS_W = 900;
@@ -37,7 +38,7 @@ export default function FloorPlan() {
   const goruntulenen = aktifAlan === "Tümü" ? masalar : masalar.filter((m) => m.alan === aktifAlan);
 
   const toggleDurum = async (masa: Masa) => {
-    const sira = ["bos", "dolu", "rezerveli"];
+    const sira = ["bos", "dolu", "temizleniyor", "rezerveli"];
     const next = sira[(sira.indexOf(masa.durum) + 1) % sira.length];
     await fetch(`/api/admin/masalar/${masa.id}`, {
       method: "PATCH",
@@ -108,6 +109,7 @@ export default function FloorPlan() {
     bos: masalar.filter((m) => m.durum === "bos").length,
     dolu: masalar.filter((m) => m.durum === "dolu").length,
     rezerveli: masalar.filter((m) => m.durum === "rezerveli").length,
+    temizleniyor: masalar.filter((m) => m.durum === "temizleniyor").length,
   };
 
   return (
@@ -123,9 +125,10 @@ export default function FloorPlan() {
         <div className="flex gap-3">
           {[
             { label: "Toplam", value: ozet.toplam, color: "var(--text)" },
-            { label: "Boş",    value: ozet.bos,    color: "#16A34A" },
-            { label: "Dolu",   value: ozet.dolu,   color: "#EF4444" },
-            { label: "Rezerve",value: ozet.rezerveli, color: "#F59E0B" },
+            { label: "Boş",      value: ozet.bos,          color: "#16A34A" },
+            { label: "Dolu",     value: ozet.dolu,         color: "#EF4444" },
+            { label: "Temizlik", value: ozet.temizleniyor, color: "#8B5CF6" },
+            { label: "Rezerve",  value: ozet.rezerveli,    color: "#F59E0B" },
           ].map((s) => (
             <div key={s.label} className="card px-4 py-2 text-center min-w-[56px]">
               <p className="text-xl font-bold leading-none" style={{ color: s.color }}>{s.value}</p>

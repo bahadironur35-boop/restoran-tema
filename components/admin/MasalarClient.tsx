@@ -8,9 +8,10 @@ type Masa = { id: number; no: number; kapasite: number; alan: string; durum: str
 const ALANLAR = ["Salon", "Bahçe", "Teras", "VIP", "Bar"];
 
 const DURUM_CONFIG: Record<string, { label: string; color: string; bg: string; next: string }> = {
-  bos:      { label: "Boş",      color: "#16A34A", bg: "#16A34A18", next: "dolu" },
-  dolu:     { label: "Dolu",     color: "#EF4444", bg: "#EF444418", next: "rezerveli" },
-  rezerveli:{ label: "Rezerveli",color: "#F59E0B", bg: "#F59E0B18", next: "bos" },
+  bos:           { label: "Boş",           color: "#16A34A", bg: "#16A34A18", next: "dolu" },
+  dolu:          { label: "Dolu",          color: "#EF4444", bg: "#EF444418", next: "temizleniyor" },
+  temizleniyor:  { label: "Temizleniyor",  color: "#8B5CF6", bg: "#8B5CF618", next: "bos" },
+  rezerveli:     { label: "Rezerveli",     color: "#F59E0B", bg: "#F59E0B18", next: "bos" },
 };
 
 export default function MasalarClient() {
@@ -105,9 +106,10 @@ export default function MasalarClient() {
   const filtreliMasalar = aktifAlan === "Tümü" ? masalar : masalar.filter((m) => m.alan === aktifAlan);
 
   // Özet istatistikler
-  const toplamMasa = masalar.length;
-  const doluMasa   = masalar.filter((m) => m.durum === "dolu").length;
-  const rezerveliMasa = masalar.filter((m) => m.durum === "rezerveli").length;
+  const toplamMasa      = masalar.length;
+  const doluMasa        = masalar.filter((m) => m.durum === "dolu").length;
+  const rezerveliMasa   = masalar.filter((m) => m.durum === "rezerveli").length;
+  const temizleniyorMasa = masalar.filter((m) => m.durum === "temizleniyor").length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,9 +120,10 @@ export default function MasalarClient() {
         {/* İstatistik özeti */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Toplam", value: toplamMasa, color: "var(--text)" },
-            { label: "Dolu",   value: doluMasa,   color: "#EF4444" },
-            { label: "Rezerve",value: rezerveliMasa, color: "#F59E0B" },
+            { label: "Toplam",     value: toplamMasa,       color: "var(--text)" },
+            { label: "Dolu",       value: doluMasa,         color: "#EF4444" },
+            { label: "Rezerve",    value: rezerveliMasa,    color: "#F59E0B" },
+            { label: "Temizlik",   value: temizleniyorMasa, color: "#8B5CF6" },
           ].map((s) => (
             <div key={s.label} className="card p-3 text-center">
               <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>

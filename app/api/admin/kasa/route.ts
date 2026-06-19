@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     await prisma.$transaction([
       prisma.odeme.create({ data: { masaId, tutar, yontem, notlar: notlar || null } }),
       prisma.siparis.updateMany({ where: { masaId, durum: { not: "teslim" } }, data: { durum: "teslim" } }),
-      prisma.masa.update({ where: { id: masaId }, data: { durum: "bos" } }),
+      prisma.masa.update({ where: { id: masaId }, data: { durum: "temizleniyor" } }),
     ]);
   } else {
     // Masasız (paket/gel-al): sadece ödeme kaydı
