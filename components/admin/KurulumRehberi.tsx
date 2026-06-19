@@ -76,6 +76,7 @@ const BOLUMLER: Bolum[] = [
           "  DATABASE_URL → Neon connection string",
           "  ADMIN_PASSWORD → işletme için güçlü şifre belirle",
           "İsteğe bağlı env var'lar (ilgili modüller açıksa ekle):",
+          "  CRON_SECRET → rastgele güçlü string (cron güvenliği için)",
           "  VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY + VAPID_SUBJECT → Web Push",
           "  IYZICO_API_KEY + IYZICO_SECRET_KEY + IYZICO_ENV → İyzico ödemesi",
           "  STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET → Stripe ödemesi",
