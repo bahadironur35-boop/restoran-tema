@@ -49,7 +49,25 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className="h-full">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <meta name="theme-color" content="#0F172A" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="EatOs" />
+        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+          }
+        ` }} />
+      </body>
     </html>
   );
 }

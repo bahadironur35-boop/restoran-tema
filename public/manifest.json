@@ -1,0 +1,24 @@
+{
+  "name": "EatOs",
+  "short_name": "EatOs",
+  "description": "Restoran Yönetim Sistemi",
+  "start_url": "/garson",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Masalar",    "url": "/garson",           "description": "Masa durumları" },
+    { "name": "Siparişler", "url": "/admin/siparisler", "description": "Aktif siparişler" },
+    { "name": "Mutfak",     "url": "/mutfak",           "description": "Mutfak ekranı" }
+  ]
+}

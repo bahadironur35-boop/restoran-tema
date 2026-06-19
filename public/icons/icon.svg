@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0F172A"/>
+  <rect x="160" y="80" width="192" height="16" rx="8" fill="#1A73E8"/>
+  <path d="M176 120 C176 200 224 240 256 260 C288 240 336 200 336 120 Z" fill="#1A73E8" opacity="0.8"/>
+  <rect x="232" y="260" width="48" height="120" rx="8" fill="#1A73E8"/>
+  <rect x="192" y="372" width="128" height="16" rx="8" fill="#1A73E8"/>
+  <circle cx="256" cy="380" r="60" fill="none" stroke="#1A73E840" stroke-width="2"/>
+  <text x="256" y="460" font-family="system-ui" font-size="48" font-weight="700" fill="#F8FAFC" text-anchor="middle">EatOs</text>
+</svg>

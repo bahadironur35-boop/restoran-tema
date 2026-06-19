@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çevrimdışı · EatOs</title>
+  <style>
+    body { margin: 0; background: #0F172A; color: #F8FAFC; font-family: system-ui, sans-serif;
+           display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 24px; }
+    .icon { font-size: 64px; margin-bottom: 16px; }
+    h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+    p { color: #64748B; font-size: 14px; margin: 0 0 24px; }
+    button { background: #1A73E8; color: white; border: none; padding: 12px 24px;
+             border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="icon">📡</div>
+    <h1>İnternet Bağlantısı Yok</h1>
+    <p>EatOs'a bağlanmak için internet gerekli.<br>Bağlantı sağlandığında otomatik devam eder.</p>
+    <button onclick="window.location.reload()">Tekrar Dene</button>
+  </div>
+</body>
+</html>
