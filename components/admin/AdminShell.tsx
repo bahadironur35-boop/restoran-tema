@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat, UserCog } from "lucide-react";
@@ -72,16 +72,67 @@ function LiveClock() {
   );
 }
 
+type ShellToast = { id: number; masaNo: number; tip: string };
+
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [me, setMe] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [shellToastlar, setShellToastlar] = useState<ShellToast[]>([]);
+  const shellCounter = useRef(0);
+  const bildirildi = useRef<Set<number>>(new Set());
 
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     fetch("/api/admin/me").then((r) => r.ok ? r.json() : null).then(setMe);
   }, []);
+
+  // Global garson talebi dinleyici — her sayfada çalışır
+  useEffect(() => {
+    let es: EventSource;
+    let retry: ReturnType<typeof setTimeout>;
+
+    const connect = () => {
+      es = new EventSource("/api/events?scope=masalar");
+      es.addEventListener("update", (e) => {
+        try {
+          const { masalar } = JSON.parse(e.data) as { masalar: { no: number; talepler: { id: number; tip: string }[] }[] };
+          if (!masalar) return;
+          for (const m of masalar) {
+            for (const t of (m.talepler ?? [])) {
+              if (bildirildi.current.has(t.id)) continue;
+              bildirildi.current.add(t.id);
+              // Ses çal
+              try {
+                const ctx = new AudioContext();
+                const beepAt = (freq: number, start: number, dur = 0.15) => {
+                  const osc = ctx.createOscillator(); const g = ctx.createGain();
+                  osc.connect(g); g.connect(ctx.destination);
+                  osc.frequency.value = freq; osc.type = "sine";
+                  g.gain.setValueAtTime(0.3, ctx.currentTime + start);
+                  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+                  osc.start(ctx.currentTime + start); osc.stop(ctx.currentTime + start + dur + 0.05);
+                };
+                if (t.tip === "hesap") { beepAt(660, 0); beepAt(880, 0.2); }
+                else { beepAt(880, 0); }
+              } catch { /* AudioContext kullanıcı etkileşimi gerektirebilir */ }
+              // Yalnızca Masa & QR sayfasında değilsek göster (orada zaten var)
+              if (!pathname.startsWith("/admin/masalar")) {
+                const id = ++shellCounter.current;
+                setShellToastlar((p) => [...p, { id, masaNo: m.no, tip: t.tip }]);
+                setTimeout(() => setShellToastlar((p) => p.filter((x) => x.id !== id)), 6000);
+              }
+            }
+          }
+        } catch { /* ignore */ }
+      });
+      es.onerror = () => { es.close(); retry = setTimeout(connect, 1000); };
+    };
+
+    connect();
+    return () => { es?.close(); clearTimeout(retry); };
+  }, [pathname]);
 
   const title = titles[pathname] ?? "Yönetim Paneli";
 
@@ -213,6 +264,28 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         <div className="flex-1 p-4 sm:p-6">{children}</div>
       </main>
+
+      {/* Global garson talebi toast bildirimleri */}
+      {shellToastlar.length > 0 && (
+        <div className="fixed top-20 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+          {shellToastlar.map((t) => (
+            <div key={t.id}
+              className="pointer-events-auto px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce"
+              style={{
+                backgroundColor: t.tip === "hesap" ? "#92400E" : "#1E3A5F",
+                border: `1px solid ${t.tip === "hesap" ? "#F59E0B" : "#3B82F6"}`,
+                color: "#fff",
+                minWidth: "220px",
+              }}>
+              <span style={{ fontSize: "22px" }}>{t.tip === "hesap" ? "💳" : "🔔"}</span>
+              <div>
+                <p className="font-bold text-sm">Masa {t.masaNo}</p>
+                <p className="text-xs opacity-80">{t.tip === "hesap" ? "Hesap istiyor" : "Garson çağırıyor"}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
