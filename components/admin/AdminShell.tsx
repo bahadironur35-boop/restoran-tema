@@ -195,7 +195,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 className="sidebar-nav-link group flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
                 style={{
                   fontFamily: '"Segoe UI", "Segoe UI Variable", Inter, ui-sans-serif, system-ui, sans-serif',
-                  fontSize: "13px",
+                  fontSize: ".84rem",
                   lineHeight: "20px",
                   fontWeight: 550,
                   justifyContent: isCollapsed ? "center" : undefined,
