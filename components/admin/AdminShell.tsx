@@ -81,6 +81,9 @@ type ShellToast = { id: number; masaNo: number; tip: string };
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  if (pathname === "/admin/login") return <>{children}</>;
+
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
