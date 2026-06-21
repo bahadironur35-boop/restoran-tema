@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { ArrowLeft, Printer, Download, MessageCircle, Mail, ChevronDown, ChevronUp, GripVertical, X, Loader2 } from "lucide-react";
 
 type MenuItem = {
   id: number; name: string; desc: string; price: string;
@@ -321,6 +321,69 @@ export default function MenuDesigner({
     setS(p => ({ ...p, [key]: val }));
   }
 
+  const [mailModal, setMailModal] = useState(false);
+  const [mailAddr, setMailAddr] = useState("");
+  const [mailLoading, setMailLoading] = useState(false);
+  const [mailMsg, setMailMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [actionLoading, setActionLoading] = useState<"pdf" | "whatsapp" | "mail" | null>(null);
+
+  const getCanvas = async () => {
+    const { default: html2canvas } = await import("html2canvas");
+    return html2canvas(printRef.current, { useCORS: true, scale: 2, backgroundColor: null });
+  };
+
+  const handlePdfIndir = async () => {
+    setActionLoading("pdf");
+    try {
+      const canvas = await getCanvas();
+      const { default: jsPDF } = await import("jspdf");
+      const size = s.boyut === "ozel" ? { w: s.ozelW, h: s.ozelH } : PAGE_SIZES[s.boyut];
+      const w = s.yon === "dikey" ? size.w : size.h;
+      const h = s.yon === "dikey" ? size.h : size.w;
+      const pdf = new jsPDF({ orientation: s.yon === "yatay" ? "landscape" : "portrait", unit: "mm", format: [w, h] });
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
+      pdf.save(`${s.restoranAdi || "menu"}.pdf`);
+    } finally { setActionLoading(null); }
+  };
+
+  const handleWhatsapp = async () => {
+    setActionLoading("whatsapp");
+    try {
+      const canvas = await getCanvas();
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], "menu.png", { type: "image/png" });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: s.restoranAdi || "Menü" });
+        } else {
+          // Masaüstü: görseli indir + WhatsApp Web aç
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url; a.download = "menu.png"; a.click();
+          URL.revokeObjectURL(url);
+          setTimeout(() => window.open("https://web.whatsapp.com/", "_blank"), 500);
+        }
+        setActionLoading(null);
+      });
+    } catch { setActionLoading(null); }
+  };
+
+  const handleMailGonder = async () => {
+    if (!mailAddr) return;
+    setMailLoading(true); setMailMsg(null);
+    try {
+      const canvas = await getCanvas();
+      const imageBase64 = canvas.toDataURL("image/png");
+      const res = await fetch("/api/admin/menu/mail-gonder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: mailAddr, imageBase64, restoranAdi: s.restoranAdi }),
+      });
+      const data = await res.json();
+      setMailMsg(res.ok ? { ok: true, text: "Mail gönderildi!" } : { ok: false, text: data.error || "Hata oluştu" });
+    } catch { setMailMsg({ ok: false, text: "Bağlantı hatası" }); }
+    finally { setMailLoading(false); }
+  };
+
   const handlePrint = () => {
     const size = s.boyut === "ozel" ? { w: s.ozelW, h: s.ozelH } : PAGE_SIZES[s.boyut];
     const w = s.yon === "dikey" ? size.w : size.h;
@@ -349,6 +412,38 @@ export default function MenuDesigner({
   const SCALE = Math.min(680 / (w * MM), 820 / (h * MM), 1);
 
   return (
+    <>
+    {/* Mail Modal */}
+    {mailModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+        <div className="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-sm" style={{ color: "var(--text)" }}>Menüyü Mail ile Gönder</h3>
+            <button onClick={() => setMailModal(false)} className="p-1 rounded hover:bg-white/5">
+              <X size={16} style={{ color: "var(--text-muted)" }} />
+            </button>
+          </div>
+          <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+            Menü görseli PNG olarak eklenti şeklinde gönderilecek.
+          </p>
+          <input
+            type="email" placeholder="ornek@mail.com" value={mailAddr}
+            onChange={e => setMailAddr(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleMailGonder()}
+            className="w-full px-3 py-2 rounded-lg text-sm mb-3 outline-none"
+            style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }}
+          />
+          {mailMsg && (
+            <p className="text-xs mb-3" style={{ color: mailMsg.ok ? "#22C55E" : "#EF4444" }}>{mailMsg.text}</p>
+          )}
+          <button onClick={handleMailGonder} disabled={mailLoading || !mailAddr}
+            className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: "#3B82F6", color: "#fff" }}>
+            {mailLoading ? <><Loader2 size={14} className="animate-spin" /> Gönderiliyor...</> : <><Mail size={14} /> Gönder</>}
+          </button>
+        </div>
+      </div>
+    )}
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* Sol panel */}
@@ -359,11 +454,28 @@ export default function MenuDesigner({
             <ArrowLeft size={16} style={{ color: "var(--text-muted)" }} />
           </Link>
           <span className="font-semibold text-sm" style={{ color: "var(--text)" }}>Menü Tasarımcısı</span>
-          <button onClick={handlePrint}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
-            style={{ backgroundColor: "var(--gold)", color: "#fff" }}>
-            <Printer size={13} /> Yazdır
-          </button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <button onClick={handlePrint} title="Yazdır"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all hover:opacity-80"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              <Printer size={13} /> Yazdır
+            </button>
+            <button onClick={handlePdfIndir} disabled={actionLoading === "pdf"} title="PDF olarak indir"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              style={{ backgroundColor: "#DC2626", color: "#fff" }}>
+              {actionLoading === "pdf" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+            </button>
+            <button onClick={handleWhatsapp} disabled={actionLoading === "whatsapp"} title="WhatsApp ile gönder"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              style={{ backgroundColor: "#25D366", color: "#fff" }}>
+              {actionLoading === "whatsapp" ? <Loader2 size={13} className="animate-spin" /> : <MessageCircle size={13} />} WhatsApp
+            </button>
+            <button onClick={() => { setMailModal(true); setMailMsg(null); }} title="Mail ile gönder"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              style={{ backgroundColor: "#3B82F6", color: "#fff" }}>
+              <Mail size={13} /> Mail
+            </button>
+          </div>
         </div>
 
         {/* Sayfa */}
@@ -735,5 +847,6 @@ export default function MenuDesigner({
         </div>
       </div>
     </div>
+    </>
   );
 }
