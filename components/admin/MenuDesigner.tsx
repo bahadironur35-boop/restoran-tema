@@ -454,7 +454,7 @@ export default function MenuDesigner({
           <Link href="/admin/menu" className="p-1 rounded hover:bg-white/5 shrink-0">
             <ArrowLeft size={15} style={{ color: "var(--text-muted)" }} />
           </Link>
-          <span className="font-semibold text-xs shrink-0" style={{ color: "var(--text)" }}>Menü Tasarımcısı</span>
+
           <div className="ml-auto flex items-center gap-1">
             <button onClick={handlePrint} title="Yazdır"
               className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium border transition-all hover:opacity-80"
