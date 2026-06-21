@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Printer, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 
 type MenuItem = {
   id: number; name: string; desc: string; price: string;
@@ -105,20 +105,23 @@ const sel = "w-full rounded-lg border px-2 py-1.5 text-xs outline-none bg-white"
 
 // ── Önizleme bileşeni (printable) ─────────────────────
 function Preview({
-  s, items, kategoriler, printRef,
+  s, items, kategoriler, gizliKat, gizliUrun, printRef,
 }: {
   s: Settings;
   items: MenuItem[];
   kategoriler: string[];
+  gizliKat: Set<string>;
+  gizliUrun: Set<number>;
   printRef: React.RefObject<HTMLDivElement>;
 }) {
   const size = s.boyut === "ozel" ? { w: s.ozelW, h: s.ozelH } : PAGE_SIZES[s.boyut];
   const w = s.yon === "dikey" ? size.w : size.h;
   const h = s.yon === "dikey" ? size.h : size.w;
-  const MM = 3.7795; // mm → px (96dpi)
+  const MM = 3.7795;
 
-  const grouped = kategoriler.reduce<Record<string, MenuItem[]>>((acc, cat) => {
-    acc[cat] = items.filter(i => i.category === cat);
+  const aktifKat = kategoriler.filter(c => !gizliKat.has(c));
+  const grouped = aktifKat.reduce<Record<string, MenuItem[]>>((acc, cat) => {
+    acc[cat] = items.filter(i => i.category === cat && !gizliUrun.has(i.id));
     return acc;
   }, {});
 
@@ -175,7 +178,7 @@ function Preview({
           columns: s.kolonSayisi,
           columnGap: s.marginMm * MM,
         }}>
-          {kategoriler.map(cat => {
+          {aktifKat.map(cat => {
             const catItems = grouped[cat] ?? [];
             if (catItems.length === 0) return null;
             return (
@@ -256,6 +259,34 @@ export default function MenuDesigner({
     adres: restoranBilgi.address ?? "",
   });
   const printRef = useRef<HTMLDivElement>(null!);
+
+  // İçerik seçimi
+  const [katSira, setKatSira]           = useState<string[]>(kategoriler);
+  const [gizliKat, setGizliKat]         = useState<Set<string>>(new Set());
+  const [gizliUrun, setGizliUrun]       = useState<Set<number>>(new Set());
+  const [acikKat, setAcikKat]           = useState<Set<string>>(new Set());
+
+  const toggleKat = (cat: string) =>
+    setGizliKat(p => { const n = new Set(p); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+  const toggleUrun = (id: number) =>
+    setGizliUrun(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAcikKat = (cat: string) =>
+    setAcikKat(p => { const n = new Set(p); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+  const moveKat = (idx: number, dir: -1 | 1) => {
+    const arr = [...katSira];
+    const next = idx + dir;
+    if (next < 0 || next >= arr.length) return;
+    [arr[idx], arr[next]] = [arr[next], arr[idx]];
+    setKatSira(arr);
+  };
+  const tumKatSec = (cat: string, sec: boolean) => {
+    const catIds = items.filter(i => i.category === cat).map(i => i.id);
+    setGizliUrun(p => {
+      const n = new Set(p);
+      catIds.forEach(id => sec ? n.delete(id) : n.add(id));
+      return n;
+    });
+  };
 
   // Google Fonts yükle
   useEffect(() => {
@@ -363,6 +394,96 @@ export default function MenuDesigner({
         </Section>
 
         {/* Zemin */}
+        {/* İçerik */}
+        <Section title="İçerik">
+          <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
+            Kategorileri ve ürünleri seç/çıkar, sırasını değiştir.
+          </p>
+          <div className="space-y-1.5">
+            {katSira.map((cat, idx) => {
+              const catItems = items.filter(i => i.category === cat);
+              const katGizli = gizliKat.has(cat);
+              const seciliSayisi = catItems.filter(i => !gizliUrun.has(i.id)).length;
+              const katAcik = acikKat.has(cat);
+              return (
+                <div key={cat} className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                  {/* Kategori satırı */}
+                  <div className="flex items-center gap-1.5 px-2 py-2"
+                    style={{ backgroundColor: katGizli ? "transparent" : "var(--bg)" }}>
+                    {/* Sıra okları */}
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button onClick={() => moveKat(idx, -1)} disabled={idx === 0}
+                        className="disabled:opacity-20 hover:opacity-60 leading-none">
+                        <ChevronUp size={11} style={{ color: "var(--text-muted)" }} />
+                      </button>
+                      <button onClick={() => moveKat(idx, 1)} disabled={idx === katSira.length - 1}
+                        className="disabled:opacity-20 hover:opacity-60 leading-none">
+                        <ChevronDown size={11} style={{ color: "var(--text-muted)" }} />
+                      </button>
+                    </div>
+                    {/* Toggle kategori */}
+                    <button onClick={() => toggleKat(cat)}
+                      className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all"
+                      style={{ borderColor: katGizli ? "var(--border)" : "var(--gold)", backgroundColor: katGizli ? "transparent" : "var(--gold)" }}>
+                      {!katGizli && <span style={{ color: "#fff", fontSize: 9, lineHeight: 1 }}>✓</span>}
+                    </button>
+                    {/* Kategori adı */}
+                    <span className="flex-1 text-xs font-semibold truncate"
+                      style={{ color: katGizli ? "var(--text-muted)" : "var(--text)", textDecoration: katGizli ? "line-through" : "none" }}>
+                      {cat}
+                    </span>
+                    {/* Sayaç */}
+                    {!katGizli && (
+                      <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>
+                        {seciliSayisi}/{catItems.length}
+                      </span>
+                    )}
+                    {/* Aç/kapat ürünler */}
+                    {!katGizli && (
+                      <button onClick={() => toggleAcikKat(cat)} className="shrink-0 hover:opacity-60">
+                        {katAcik ? <ChevronUp size={13} style={{ color: "var(--text-muted)" }} /> : <ChevronDown size={13} style={{ color: "var(--text-muted)" }} />}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Ürün listesi */}
+                  {!katGizli && katAcik && (
+                    <div className="border-t" style={{ borderColor: "var(--border)" }}>
+                      {/* Tümünü seç/kaldır */}
+                      <div className="flex gap-2 px-3 py-1.5 border-b" style={{ borderColor: "var(--border)" }}>
+                        <button onClick={() => tumKatSec(cat, true)}
+                          className="text-xs hover:underline" style={{ color: "var(--gold)" }}>Tümünü seç</button>
+                        <span style={{ color: "var(--border)" }}>|</span>
+                        <button onClick={() => tumKatSec(cat, false)}
+                          className="text-xs hover:underline" style={{ color: "var(--text-muted)" }}>Tümünü kaldır</button>
+                      </div>
+                      <div className="py-1 max-h-48 overflow-y-auto">
+                        {catItems.map(item => {
+                          const gizli = gizliUrun.has(item.id);
+                          return (
+                            <button key={item.id} onClick={() => toggleUrun(item.id)}
+                              className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-black/5 transition-colors">
+                              <div className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all"
+                                style={{ borderColor: gizli ? "var(--border)" : "var(--gold)", backgroundColor: gizli ? "transparent" : "var(--gold)" }}>
+                                {!gizli && <span style={{ color: "#fff", fontSize: 8, lineHeight: 1 }}>✓</span>}
+                              </div>
+                              <span className="text-xs truncate"
+                                style={{ color: gizli ? "var(--text-muted)" : "var(--text)", textDecoration: gizli ? "line-through" : "none" }}>
+                                {item.name}
+                              </span>
+                              <span className="text-xs ml-auto shrink-0" style={{ color: "var(--text-muted)" }}>{item.price}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+
         <Section title="Zemin">
           <Row label="Renk">
             <div className="flex gap-2 items-center">
@@ -528,7 +649,7 @@ export default function MenuDesigner({
           transformOrigin: "top center",
           boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
         }}>
-          <Preview s={s} items={items} kategoriler={kategoriler} printRef={printRef} />
+          <Preview s={s} items={items} kategoriler={katSira} gizliKat={gizliKat} gizliUrun={gizliUrun} printRef={printRef} />
         </div>
       </div>
     </div>
