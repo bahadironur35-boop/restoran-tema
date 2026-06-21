@@ -26,6 +26,9 @@ type Settings = {
   fotografBoyut: number;
   aciklamaGoster: boolean;
   fiyatHizalama: "sag" | "inline";
+  dolguGoster: boolean;
+  dolguStil: "nokta" | "cizgi" | "orta-nokta" | "tire" | "kare";
+  dolguRenk: string;
   // Başlık
   logoUrl: string;
   restoranAdi: string;
@@ -70,6 +73,7 @@ const DEFAULT: Settings = {
   bgColor: "#ffffff", bgImage: "", bgOpacity: 0.15,
   kolonSayisi: 2, kategoriStil: "cizgi",
   fotografGoster: false, fotografBoyut: 48, aciklamaGoster: true, fiyatHizalama: "sag",
+  dolguGoster: true, dolguStil: "nokta", dolguRenk: "#999999",
   logoUrl: "", restoranAdi: "", altBaslik: "", adres: "",
   kategoriRenk: "#1a1a1a", urunRenk: "#1a1a1a", fiyatRenk: "#c8860a", aciklamaRenk: "#666666",
   baslikFont: "Playfair Display", kategoriFont: "Playfair Display", urunFont: "Inter",
@@ -215,14 +219,27 @@ function Preview({
                           style={{ width: s.fotografBoyut, height: s.fotografBoyut, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                       )}
                       <div style={{ flex: 1 }}>
-                        <div style={{
-                          display: "flex",
-                          justifyContent: s.fiyatHizalama === "sag" ? "space-between" : "flex-start",
-                          gap: 4, alignItems: "baseline",
-                        }}>
-                          <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.urunFs, fontWeight: 600, color: s.urunRenk }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+                          <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.urunFs, fontWeight: 600, color: s.urunRenk, whiteSpace: "nowrap" }}>
                             {item.name}
                           </span>
+                          {s.dolguGoster && s.fiyatHizalama === "sag" && (
+                            <span style={{
+                              flex: 1,
+                              overflow: "hidden",
+                              fontSize: s.urunFs * 0.85,
+                              color: s.dolguRenk,
+                              letterSpacing: s.dolguStil === "nokta" ? "0.15em" : s.dolguStil === "orta-nokta" ? "0.3em" : s.dolguStil === "tire" ? "0.2em" : s.dolguStil === "kare" ? "0.3em" : "0.1em",
+                              whiteSpace: "nowrap",
+                              display: "block",
+                              maxWidth: "100%",
+                            }}>
+                              {(() => {
+                                const chars: Record<string, string> = { nokta: ".", cizgi: "─", "orta-nokta": "·", tire: "-", kare: "▪" };
+                                return (chars[s.dolguStil] ?? ".").repeat(60);
+                              })()}
+                            </span>
+                          )}
                           <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.fiyatFs, fontWeight: 700, color: s.fiyatRenk, whiteSpace: "nowrap" }}>
                             {s.fiyatHizalama === "inline" && " — "}{item.price}
                           </span>
@@ -566,7 +583,7 @@ export default function MenuDesigner({
                     backgroundColor: s.fotografGoster === v ? "var(--gold)" : "transparent",
                     color: s.fotografGoster === v ? "#fff" : "var(--text)",
                   }}>
-                  {v ? "📷 Fotoğraflı" : "Fotoğrafsız"}
+                  {v ? "Fotoğraflı" : "Fotoğrafsız"}
                 </button>
               ))}
             </div>
@@ -581,12 +598,69 @@ export default function MenuDesigner({
             </Row>
           )}
           <Row label="Açıklama">
-            <button onClick={() => set("aciklamaGoster", !s.aciklamaGoster)}
-              className="text-xs px-3 py-1.5 rounded-lg border transition-all"
-              style={{ borderColor: s.aciklamaGoster ? "var(--gold)" : "var(--border)", backgroundColor: s.aciklamaGoster ? "var(--gold)" : "transparent", color: s.aciklamaGoster ? "#fff" : "var(--text)" }}>
-              {s.aciklamaGoster ? "Göster" : "Gizle"}
-            </button>
+            <div className="flex gap-2">
+              {([true, false] as const).map(v => (
+                <button key={String(v)} onClick={() => set("aciklamaGoster", v)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                  style={{
+                    borderColor: s.aciklamaGoster === v ? "var(--gold)" : "var(--border)",
+                    backgroundColor: s.aciklamaGoster === v ? "var(--gold)" : "transparent",
+                    color: s.aciklamaGoster === v ? "#fff" : "var(--text)",
+                  }}>
+                  {v ? "Göster" : "Gizle"}
+                </button>
+              ))}
+            </div>
           </Row>
+          <Row label="Ad–Fiyat Dolgusu">
+            <div className="flex gap-2">
+              {([true, false] as const).map(v => (
+                <button key={String(v)} onClick={() => set("dolguGoster", v)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                  style={{
+                    borderColor: s.dolguGoster === v ? "var(--gold)" : "var(--border)",
+                    backgroundColor: s.dolguGoster === v ? "var(--gold)" : "transparent",
+                    color: s.dolguGoster === v ? "#fff" : "var(--text)",
+                  }}>
+                  {v ? "Göster" : "Gizle"}
+                </button>
+              ))}
+            </div>
+          </Row>
+          {s.dolguGoster && (
+            <>
+              <Row label="Dolgu Stili">
+                <div className="grid grid-cols-5 gap-1">
+                  {([
+                    { key: "nokta",      label: "......" },
+                    { key: "cizgi",      label: "──────" },
+                    { key: "orta-nokta", label: "· · · ·" },
+                    { key: "tire",       label: "- - - -" },
+                    { key: "kare",       label: "▪ ▪ ▪ ▪" },
+                  ] as const).map(({ key, label }) => (
+                    <button key={key} onClick={() => set("dolguStil", key)}
+                      className="py-1 rounded text-center border transition-all"
+                      style={{
+                        fontSize: 9,
+                        borderColor: s.dolguStil === key ? "var(--gold)" : "var(--border)",
+                        backgroundColor: s.dolguStil === key ? "var(--gold)" : "transparent",
+                        color: s.dolguStil === key ? "#fff" : "var(--text-muted)",
+                        letterSpacing: "-0.05em",
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </Row>
+              <Row label="Dolgu Rengi">
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={s.dolguRenk} onChange={e => set("dolguRenk", e.target.value)}
+                    className="w-7 h-7 rounded border cursor-pointer shrink-0" style={{ padding: 1 }} />
+                  <input type="text" value={s.dolguRenk} onChange={e => set("dolguRenk", e.target.value)} className={inp} />
+                </div>
+              </Row>
+            </>
+          )}
         </Section>
 
         {/* Fontlar */}
