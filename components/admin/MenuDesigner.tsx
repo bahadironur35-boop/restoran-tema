@@ -448,33 +448,33 @@ export default function MenuDesigner({
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* Sol panel */}
-      <div className="w-80 shrink-0 overflow-y-auto flex flex-col" style={{ backgroundColor: "var(--bg-card)", borderRight: "1px solid var(--border)" }}>
+      <div className="shrink-0 overflow-y-auto flex flex-col" style={{ width: 380, backgroundColor: "var(--bg-card)", borderRight: "1px solid var(--border)" }}>
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 shrink-0 sticky top-0 z-10" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
-          <Link href="/admin/menu" className="p-1 rounded hover:bg-white/5">
-            <ArrowLeft size={16} style={{ color: "var(--text-muted)" }} />
+        <div className="flex items-center gap-2 px-3 py-2.5 shrink-0 sticky top-0 z-10" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
+          <Link href="/admin/menu" className="p-1 rounded hover:bg-white/5 shrink-0">
+            <ArrowLeft size={15} style={{ color: "var(--text-muted)" }} />
           </Link>
-          <span className="font-semibold text-sm" style={{ color: "var(--text)" }}>Menü Tasarımcısı</span>
-          <div className="ml-auto flex items-center gap-1.5">
+          <span className="font-semibold text-xs shrink-0" style={{ color: "var(--text)" }}>Menü Tasarımcısı</span>
+          <div className="ml-auto flex items-center gap-1">
             <button onClick={handlePrint} title="Yazdır"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all hover:opacity-80"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium border transition-all hover:opacity-80"
               style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-              <Printer size={13} /> Yazdır
+              <Printer size={12} /> Yazdır
             </button>
             <button onClick={handlePdfIndir} disabled={actionLoading === "pdf"} title="PDF olarak indir"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
               style={{ backgroundColor: "#DC2626", color: "#fff" }}>
-              {actionLoading === "pdf" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+              {actionLoading === "pdf" ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} PDF
             </button>
             <button onClick={handleWhatsapp} disabled={actionLoading === "whatsapp"} title="WhatsApp ile gönder"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
               style={{ backgroundColor: "#25D366", color: "#fff" }}>
-              {actionLoading === "whatsapp" ? <Loader2 size={13} className="animate-spin" /> : <MessageCircle size={13} />} WhatsApp
+              {actionLoading === "whatsapp" ? <Loader2 size={12} className="animate-spin" /> : <MessageCircle size={12} />} WA
             </button>
             <button onClick={() => { setMailModal(true); setMailMsg(null); }} title="Mail ile gönder"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
               style={{ backgroundColor: "#3B82F6", color: "#fff" }}>
-              <Mail size={13} /> Mail
+              <Mail size={12} /> Mail
             </button>
           </div>
         </div>
@@ -837,7 +837,7 @@ export default function MenuDesigner({
       </div>
 
       {/* Sağ önizleme */}
-      <div className="flex-1 overflow-auto flex items-start justify-center p-8"
+      <div className="flex-1 overflow-auto flex items-start justify-center p-3"
         style={{ backgroundColor: "#e5e7eb" }}>
         <div style={{
           transform: `scale(${SCALE})`,
