@@ -23,6 +23,7 @@ type Settings = {
   kolonSayisi: 1 | 2 | 3;
   kategoriStil: "cizgi" | "kutu" | "sadece-yazi";
   fotografGoster: boolean;
+  fotografBoyut: number;
   aciklamaGoster: boolean;
   fiyatHizalama: "sag" | "inline";
   // Başlık
@@ -68,7 +69,7 @@ const DEFAULT: Settings = {
   boyut: "A4", yon: "dikey", marginMm: 12, ozelW: 210, ozelH: 297,
   bgColor: "#ffffff", bgImage: "", bgOpacity: 0.15,
   kolonSayisi: 2, kategoriStil: "cizgi",
-  fotografGoster: false, aciklamaGoster: true, fiyatHizalama: "sag",
+  fotografGoster: false, fotografBoyut: 48, aciklamaGoster: true, fiyatHizalama: "sag",
   logoUrl: "", restoranAdi: "", altBaslik: "", adres: "",
   kategoriRenk: "#1a1a1a", urunRenk: "#1a1a1a", fiyatRenk: "#c8860a", aciklamaRenk: "#666666",
   baslikFont: "Playfair Display", kategoriFont: "Playfair Display", urunFont: "Inter",
@@ -208,7 +209,7 @@ function Preview({
                     <div key={item.id} style={{ display: "flex", gap: 6, breakInside: "avoid" }}>
                       {s.fotografGoster && item.image && (
                         <img src={item.image} alt={item.name}
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                          style={{ width: s.fotografBoyut, height: s.fotografBoyut, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                       )}
                       <div style={{ flex: 1 }}>
                         <div style={{
@@ -441,6 +442,15 @@ export default function MenuDesigner({
               {s.fotografGoster ? "Göster" : "Gizle"}
             </button>
           </Row>
+          {s.fotografGoster && (
+            <Row label="Fotoğraf Boyutu">
+              <div className="flex items-center gap-2">
+                <input type="range" min={24} max={120} step={4} value={s.fotografBoyut}
+                  onChange={e => set("fotografBoyut", +e.target.value)} className="flex-1" />
+                <span className="text-xs w-12 text-right" style={{ color: "var(--text-muted)" }}>{s.fotografBoyut}px</span>
+              </div>
+            </Row>
+          )}
           <Row label="Açıklama">
             <button onClick={() => set("aciklamaGoster", !s.aciklamaGoster)}
               className="text-xs px-3 py-1.5 rounded-lg border transition-all"
