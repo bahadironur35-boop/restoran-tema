@@ -218,29 +218,30 @@ function Preview({
                         <img src={item.image} alt={item.name}
                           style={{ width: s.fotografBoyut, height: s.fotografBoyut, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                       )}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-                          <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.urunFs, fontWeight: 600, color: s.urunRenk, whiteSpace: "nowrap" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: 3, width: "100%" }}>
+                          <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.urunFs, fontWeight: 600, color: s.urunRenk, flexShrink: 0, lineHeight: 1.3 }}>
                             {item.name}
                           </span>
                           {s.dolguGoster && s.fiyatHizalama === "sag" && (
                             <span style={{
                               flex: 1,
-                              overflow: "hidden",
-                              fontSize: s.urunFs * 0.85,
-                              color: s.dolguRenk,
-                              letterSpacing: s.dolguStil === "nokta" ? "0.15em" : s.dolguStil === "orta-nokta" ? "0.3em" : s.dolguStil === "tire" ? "0.2em" : s.dolguStil === "kare" ? "0.3em" : "0.1em",
-                              whiteSpace: "nowrap",
+                              minWidth: 8,
                               display: "block",
-                              maxWidth: "100%",
-                            }}>
-                              {(() => {
-                                const chars: Record<string, string> = { nokta: ".", cizgi: "─", "orta-nokta": "·", tire: "-", kare: "▪" };
-                                return (chars[s.dolguStil] ?? ".").repeat(60);
-                              })()}
-                            </span>
+                              marginBottom: "0.25em",
+                              ...(s.dolguStil === "cizgi"
+                                ? { borderBottom: `0.5px solid ${s.dolguRenk}` }
+                                : s.dolguStil === "tire"
+                                ? { borderBottom: `1.5px dashed ${s.dolguRenk}` }
+                                : s.dolguStil === "orta-nokta"
+                                ? { borderBottom: `1.5px dotted ${s.dolguRenk}` }
+                                : s.dolguStil === "kare"
+                                ? { backgroundImage: `repeating-linear-gradient(to right, ${s.dolguRenk} 0, ${s.dolguRenk} 2px, transparent 2px, transparent 6px)`, height: "2px", marginBottom: "0.3em" }
+                                : { borderBottom: `1.5px dotted ${s.dolguRenk}` }
+                              ),
+                            }} />
                           )}
-                          <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.fiyatFs, fontWeight: 700, color: s.fiyatRenk, whiteSpace: "nowrap" }}>
+                          <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.fiyatFs, fontWeight: 700, color: s.fiyatRenk, whiteSpace: "nowrap", flexShrink: 0, lineHeight: 1.3 }}>
                             {s.fiyatHizalama === "inline" && " — "}{item.price}
                           </span>
                         </div>
