@@ -10,7 +10,9 @@ type MenuItem = {
 
 type Settings = {
   // Sayfa
-  boyut: "A4" | "A5" | "A3" | "kare";
+  boyut: "A4" | "A5" | "A3" | "kare" | "ozel";
+  ozelW: number;
+  ozelH: number;
   yon: "dikey" | "yatay";
   marginMm: number;
   // Zemin
@@ -59,10 +61,11 @@ const PAGE_SIZES: Record<string, { w: number; h: number }> = {
   A5:   { w: 148, h: 210 },
   A3:   { w: 297, h: 420 },
   kare: { w: 210, h: 210 },
+  ozel: { w: 210, h: 297 }, // placeholder, gerçek değer s.ozelW/H'dan gelir
 };
 
 const DEFAULT: Settings = {
-  boyut: "A4", yon: "dikey", marginMm: 12,
+  boyut: "A4", yon: "dikey", marginMm: 12, ozelW: 210, ozelH: 297,
   bgColor: "#ffffff", bgImage: "", bgOpacity: 0.15,
   kolonSayisi: 2, kategoriStil: "cizgi",
   fotografGoster: false, aciklamaGoster: true, fiyatHizalama: "sag",
@@ -108,7 +111,7 @@ function Preview({
   kategoriler: string[];
   printRef: React.RefObject<HTMLDivElement>;
 }) {
-  const size = PAGE_SIZES[s.boyut];
+  const size = s.boyut === "ozel" ? { w: s.ozelW, h: s.ozelH } : PAGE_SIZES[s.boyut];
   const w = s.yon === "dikey" ? size.w : size.h;
   const h = s.yon === "dikey" ? size.h : size.w;
   const MM = 3.7795; // mm → px (96dpi)
@@ -270,7 +273,7 @@ export default function MenuDesigner({
   }
 
   const handlePrint = () => {
-    const size = PAGE_SIZES[s.boyut];
+    const size = s.boyut === "ozel" ? { w: s.ozelW, h: s.ozelH } : PAGE_SIZES[s.boyut];
     const w = s.yon === "dikey" ? size.w : size.h;
     const h = s.yon === "dikey" ? size.h : size.w;
     const html = printRef.current?.outerHTML ?? "";
@@ -290,7 +293,7 @@ export default function MenuDesigner({
     win.document.close();
   };
 
-  const size = PAGE_SIZES[s.boyut];
+  const size = s.boyut === "ozel" ? { w: s.ozelW, h: s.ozelH } : PAGE_SIZES[s.boyut];
   const w = s.yon === "dikey" ? size.w : size.h;
   const h = s.yon === "dikey" ? size.h : size.w;
   const MM = 3.7795;
@@ -322,8 +325,23 @@ export default function MenuDesigner({
               <option value="A5">A5 (148×210mm)</option>
               <option value="A3">A3 (297×420mm)</option>
               <option value="kare">Kare (210×210mm)</option>
+              <option value="ozel">Özel ölçü...</option>
             </select>
           </Row>
+          {s.boyut === "ozel" && (
+            <Row label="Genişlik × Yükseklik">
+              <div className="flex items-center gap-1">
+                <input type="number" min={50} max={1000} value={s.ozelW}
+                  onChange={e => set("ozelW", +e.target.value)}
+                  className={inp} style={{ width: 70 }} />
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>×</span>
+                <input type="number" min={50} max={1000} value={s.ozelH}
+                  onChange={e => set("ozelH", +e.target.value)}
+                  className={inp} style={{ width: 70 }} />
+                <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>mm</span>
+              </div>
+            </Row>
+          )}
           <Row label="Yön">
             <div className="flex gap-2">
               {(["dikey","yatay"] as const).map(v => (
