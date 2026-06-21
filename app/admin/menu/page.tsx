@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { hasRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import MenuYonetim from "@/components/admin/MenuYonetim";
+import Link from "next/link";
+import { Palette } from "lucide-react";
 
 const DEFAULT_KATEGORILER = ["Başlangıçlar", "Ana Yemekler", "Tatlılar", "İçecekler"];
 
@@ -18,7 +20,15 @@ export default async function AdminMenuPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-8">Menü Yönetimi</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">Menü Yönetimi</h1>
+        <Link href="/admin/menu/tasarim"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+          style={{ backgroundColor: "var(--gold)", color: "#fff" }}>
+          <Palette size={15} />
+          Menü Tasarla
+        </Link>
+      </div>
       <MenuYonetim items={items} initialKategoriler={kategoriler} />
     </div>
   );
