@@ -557,11 +557,19 @@ export default function MenuDesigner({
             </select>
           </Row>
           <Row label="Fotoğraflar">
-            <button onClick={() => set("fotografGoster", !s.fotografGoster)}
-              className="text-xs px-3 py-1.5 rounded-lg border transition-all"
-              style={{ borderColor: s.fotografGoster ? "var(--gold)" : "var(--border)", backgroundColor: s.fotografGoster ? "var(--gold)" : "transparent", color: s.fotografGoster ? "#fff" : "var(--text)" }}>
-              {s.fotografGoster ? "Göster" : "Gizle"}
-            </button>
+            <div className="flex gap-2">
+              {([false, true] as const).map(v => (
+                <button key={String(v)} onClick={() => set("fotografGoster", v)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                  style={{
+                    borderColor: s.fotografGoster === v ? "var(--gold)" : "var(--border)",
+                    backgroundColor: s.fotografGoster === v ? "var(--gold)" : "transparent",
+                    color: s.fotografGoster === v ? "#fff" : "var(--text)",
+                  }}>
+                  {v ? "📷 Fotoğraflı" : "Fotoğrafsız"}
+                </button>
+              ))}
+            </div>
           </Row>
           {s.fotografGoster && (
             <Row label="Fotoğraf Boyutu">
