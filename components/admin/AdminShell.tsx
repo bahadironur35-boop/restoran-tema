@@ -96,7 +96,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     fetch("/api/admin/me").then((r) => r.ok ? r.json() : null).then(setMe);
-    fetch("/api/admin/ayarlar").then((r) => r.ok ? r.json() : {}).then(setModuller);
+    const cekModuller = () =>
+      fetch("/api/admin/ayarlar").then((r) => r.ok ? r.json() : {}).then(setModuller);
+    cekModuller();
+    // Ayarlar sayfasında modül aç/kapa yapılınca sidebar'ı refresh'siz güncelle
+    window.addEventListener("moduller-degisti", cekModuller);
+    return () => window.removeEventListener("moduller-degisti", cekModuller);
   }, []);
 
   // Global garson talebi dinleyici — her sayfada çalışır
