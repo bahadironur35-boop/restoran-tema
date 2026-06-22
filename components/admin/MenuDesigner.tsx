@@ -167,6 +167,18 @@ function Preview({
   const w = s.yon === "dikey" ? size.w : size.h;
   const h = s.yon === "dikey" ? size.h : size.w;
   const MM = 3.7795;
+  const pageH = h * MM;
+
+  const [contentH, setContentH] = useState(pageH);
+  const measureRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setContentH(el.scrollHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const pageCount = Math.max(1, Math.ceil(contentH / pageH));
 
   const aktifKat = kategoriler.filter(c => !gizliKat.has(c));
   const grouped = aktifKat.reduce<Record<string, MenuItem[]>>((acc, cat) => {
@@ -174,15 +186,8 @@ function Preview({
     return acc;
   }, {});
 
-  return (
-    <div ref={printRef}
-      className="relative"
-      style={{
-        width: w * MM, minHeight: h * MM,
-        backgroundColor: s.bgColor,
-        fontFamily: s.urunFont + ", sans-serif",
-        flexShrink: 0,
-      }}>
+  // İçerik oluşturma — hem gizli printRef hem de görsel sayfalar için
+  const renderPageContent = () => (<>
       {/* Arka plan resmi */}
       {s.bgImage && (
         <div style={{
@@ -487,7 +492,56 @@ function Preview({
           );
         })()}
       </div>
+    </>);
+
+  // Sayfa kartı — içeriği belirli Y konumundan keser
+  const renderPageCard = (pageIdx: number) => (
+    <div key={pageIdx} style={{ position: "relative", flexShrink: 0 }}>
+      {/* Sayfa numarası etiketi */}
+      {pageCount > 1 && (
+        <div style={{
+          position: "absolute", top: -22, right: 0,
+          fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.06em",
+        }}>
+          {pageIdx + 1} / {pageCount}
+        </div>
+      )}
+      <div style={{
+        width: w * MM, height: pageH, overflow: "hidden", position: "relative",
+        backgroundColor: s.bgColor,
+        fontFamily: s.urunFont + ", sans-serif",
+        boxShadow: "0 4px 32px rgba(0,0,0,0.22)",
+      }}>
+        {/* İçerik bu sayfa için kaydırılmış */}
+        <div style={{ position: "absolute", top: -pageIdx * pageH, left: 0, right: 0 }}>
+          {renderPageContent()}
+        </div>
+      </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Gizli tam-içerik div — PDF ve Yazdır için */}
+      <div
+        ref={(el) => {
+          (measureRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+          (printRef as React.MutableRefObject<HTMLDivElement>).current = el!;
+        }}
+        style={{
+          position: "absolute", left: -9999, top: 0,
+          width: w * MM,
+          backgroundColor: s.bgColor,
+          fontFamily: s.urunFont + ", sans-serif",
+        }}>
+        {renderPageContent()}
+      </div>
+
+      {/* Görsel sayfa kartları */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "flex-start", paddingTop: 28 }}>
+        {Array.from({ length: pageCount }, (_, i) => renderPageCard(i))}
+      </div>
+    </>
   );
 }
 
