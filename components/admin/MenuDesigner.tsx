@@ -24,6 +24,7 @@ type Settings = {
   kategoriStil: "cizgi" | "kutu" | "sadece-yazi";
   fotografGoster: boolean;
   fotografBoyut: number;
+  fotografRadius: number;
   aciklamaGoster: boolean;
   fiyatHizalama: "sag" | "inline";
   dolguGoster: boolean;
@@ -89,7 +90,7 @@ const DEFAULT: Settings = {
   boyut: "A4", yon: "dikey", marginMm: 12, ozelW: 210, ozelH: 297,
   bgColor: "#ffffff", bgImage: "", bgOpacity: 0.15,
   kolonSayisi: 2, kategoriStil: "cizgi",
-  fotografGoster: false, fotografBoyut: 48, aciklamaGoster: true, fiyatHizalama: "sag",
+  fotografGoster: false, fotografBoyut: 48, fotografRadius: 4, aciklamaGoster: true, fiyatHizalama: "sag",
   dolguGoster: true, dolguStil: "nokta", dolguRenk: "#999999",
   logoUrl: "", restoranAdi: "", altBaslik: "", adres: "",
   kategoriRenk: "#1a1a1a", urunRenk: "#1a1a1a", fiyatRenk: "#c8860a", aciklamaRenk: "#666666",
@@ -414,7 +415,7 @@ function Preview({
                     <div key={item.id} style={{ display: "flex", gap: 6, breakInside: "avoid" }}>
                       {s.fotografGoster && item.image && (
                         <img src={item.image} alt={item.name}
-                          style={{ width: s.fotografBoyut, height: s.fotografBoyut, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                          style={{ width: s.fotografBoyut, height: s.fotografBoyut, objectFit: "cover", borderRadius: s.fotografRadius, flexShrink: 0 }} />
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 3, width: "100%" }}>
@@ -896,13 +897,26 @@ export default function MenuDesigner({
             <Toggle value={s.fotografGoster} onChange={v => set("fotografGoster", v)} />
           </Row>
           {s.fotografGoster && (
-            <Row label="Fotoğraf Boyutu">
-              <div className="flex items-center gap-2">
-                <input type="range" min={24} max={120} step={4} value={s.fotografBoyut}
-                  onChange={e => set("fotografBoyut", +e.target.value)} className="flex-1" />
-                <span className="text-xs w-12 text-right" style={{ color: "var(--text-muted)" }}>{s.fotografBoyut}px</span>
-              </div>
-            </Row>
+            <>
+              <Row label="Fotoğraf Boyutu">
+                <div className="flex items-center gap-2">
+                  <input type="range" min={24} max={120} step={4} value={s.fotografBoyut}
+                    onChange={e => set("fotografBoyut", +e.target.value)} className="flex-1" />
+                  <span className="text-xs w-12 text-right" style={{ color: "var(--text-muted)" }}>{s.fotografBoyut}px</span>
+                </div>
+              </Row>
+              <Row label="Köşe Yarıçapı">
+                <div className="flex items-center gap-2">
+                  <input type="range" min={0} max={60} step={2} value={s.fotografRadius}
+                    onChange={e => set("fotografRadius", +e.target.value)} className="flex-1" />
+                  <input type="number" min={0} max={999} value={s.fotografRadius}
+                    onChange={e => set("fotografRadius", +e.target.value)}
+                    className="text-xs w-14 text-right px-1 py-0.5 rounded border outline-none"
+                    style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>px</span>
+                </div>
+              </Row>
+            </>
           )}
           <Row label="Açıklama">
             <Toggle value={s.aciklamaGoster} onChange={v => set("aciklamaGoster", v)} />
