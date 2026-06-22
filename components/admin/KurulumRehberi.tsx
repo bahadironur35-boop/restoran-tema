@@ -1,6 +1,20 @@
 ﻿"use client";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, CheckSquare, Square } from "lucide-react";
+
+const CHECKLIST: { baslik: string; sure: string; zorunlu: boolean; detay: string }[] = [
+  { baslik: "Neon'da yeni veritabanı aç", sure: "5 dk", zorunlu: true, detay: "neon.tech → New Project → müşteri adını ver → Connection string'i kopyala" },
+  { baslik: "Vercel'de yeni proje aç", sure: "5 dk", zorunlu: true, detay: "vercel.com → Add New Project → restoran-tema reposunu seç → DATABASE_URL ve ADMIN_PASSWORD ekle → Deploy" },
+  { baslik: "Veritabanı tablolarını oluştur", sure: "3 dk", zorunlu: true, detay: "C:\\projeler\\restoran-tema klasöründe .env'ye müşterinin DATABASE_URL'ini yaz → npx prisma db push → sonra .env'yi eski haline getir" },
+  { baslik: "Sisteme gir, temel ayarları yap", sure: "10 dk", zorunlu: true, detay: "yeni-proje.vercel.app/login → Ayarlar → Restoran adı, telefon, adres, çalışma saatleri → Modülleri işletmeye göre aç/kapat" },
+  { baslik: "Masaları ekle", sure: "10 dk", zorunlu: true, detay: "Admin → Masa & QR → her masa için numara, kapasite, alan gir → Masa Planı'nda yerleştir" },
+  { baslik: "Menüyü gir", sure: "1-2 saat", zorunlu: true, detay: "Admin → Menü Yönetimi → kategoriler ve ürünler → müşteriyle birlikte yaparsan daha hızlı olur" },
+  { baslik: "QR kodları yazdır", sure: "15 dk", zorunlu: true, detay: "Masa & QR → her masanın QR ikonuna tıkla → PNG indir → yazdır, laminasyon yaptır" },
+  { baslik: "Domain bağla", sure: "15 dk", zorunlu: false, detay: "Vercel → Settings → Domains → müşterinin domain'ini ekle → DNS ayarlarını müşterinin sağlayıcısında güncelle" },
+  { baslik: "Uçtan uca test yap", sure: "20 dk", zorunlu: true, detay: "Telefonla QR oku → sipariş ver → kasadan öde → masanın boşa döndüğünü gör → her şey tamam ise müşteriye şifreyi teslim et" },
+  { baslik: "Web Push kur (bildirimler açıksa)", sure: "5 dk", zorunlu: false, detay: "VAPID anahtarları oluştur → Vercel'e ekle → Ayarlar → Web Push Bildirimleri aç" },
+  { baslik: "Online ödeme kur (isteniyorsa)", sure: "1-2 gün", zorunlu: false, detay: "İyzico başvurusu yap (onay 1-2 gün sürer) → API anahtarlarını Vercel'e ekle → Ayarlar → Online Ödeme aç" },
+];
 
 type Adim = {
   baslik: string;
@@ -472,12 +486,90 @@ const BOLUMLER: Bolum[] = [
 
 export default function KurulumRehberi() {
   const [acik, setAcik] = useState<number[]>([]);
+  const [tamamlandi, setTamamlandi] = useState<Set<number>>(new Set());
+  const [checklistAcik, setChecklistAcik] = useState(true);
 
   const toggle = (no: number) =>
     setAcik((p) => p.includes(no) ? p.filter((n) => n !== no) : [...p, no]);
 
+  const toggleTamamlandi = (i: number) =>
+    setTamamlandi((p) => { const s = new Set(p); s.has(i) ? s.delete(i) : s.add(i); return s; });
+
+  const zorunluSayisi = CHECKLIST.filter(c => c.zorunlu).length;
+  const tamamlananZorunlu = CHECKLIST.filter((c, i) => c.zorunlu && tamamlandi.has(i)).length;
+
   return (
     <div className="max-w-3xl space-y-4">
+
+      {/* Yeni Müşteri Checklist */}
+      <div className="card overflow-hidden mb-2">
+        <button
+          onClick={() => setChecklistAcik(p => !p)}
+          className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-white/5"
+        >
+          <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: "#10B981" }}>
+            ✓
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm" style={{ color: "var(--text)" }}>Yeni Müşteri Checklist</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+              Anlaşma yapıldı, şimdi ne yapmalısın? — {tamamlananZorunlu}/{zorunluSayisi} zorunlu adım tamamlandı
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--border)" }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${(tamamlananZorunlu / zorunluSayisi) * 100}%`, backgroundColor: "#10B981" }} />
+            </div>
+            {checklistAcik
+              ? <ChevronDown size={16} style={{ color: "var(--text-muted)" }} />
+              : <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+            }
+          </div>
+        </button>
+
+        {checklistAcik && (
+          <div className="border-t px-5 pb-5 pt-4 space-y-2" style={{ borderColor: "var(--border)" }}>
+            {CHECKLIST.map((item, i) => {
+              const tamam = tamamlandi.has(i);
+              return (
+                <button
+                  key={i}
+                  onClick={() => toggleTamamlandi(i)}
+                  className="w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors hover:bg-white/5"
+                  style={{ opacity: tamam ? 0.5 : 1 }}
+                >
+                  {tamam
+                    ? <CheckSquare size={16} style={{ color: "#10B981", flexShrink: 0, marginTop: 2 }} />
+                    : <Square size={16} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 2 }} />
+                  }
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium" style={{ color: "var(--text)", textDecoration: tamam ? "line-through" : "none" }}>
+                        {item.baslik}
+                      </span>
+                      {!item.zorunlu && (
+                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                          isteğe bağlı
+                        </span>
+                      )}
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>~{item.sure}</span>
+                    </div>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{item.detay}</p>
+                  </div>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setTamamlandi(new Set())}
+              className="mt-2 text-xs px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+              style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+            >
+              Sıfırla (yeni müşteri için)
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Üst özet */}
       <div className="card p-5 mb-6" style={{ borderLeft: "3px solid #1A73E8" }}>
         <p className="text-sm font-medium mb-1" style={{ color: "var(--text)" }}>Ne zaman kullanılır?</p>
