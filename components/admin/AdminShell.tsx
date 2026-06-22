@@ -97,7 +97,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     fetch("/api/admin/me").then((r) => r.ok ? r.json() : null).then(setMe);
     const cekModuller = () =>
-      fetch("/api/admin/ayarlar").then((r) => r.ok ? r.json() : {}).then(setModuller);
+      fetch(`/api/admin/ayarlar?t=${Date.now()}`, { cache: "no-store" })
+        .then((r) => r.ok ? r.json() : {}).then(setModuller);
     cekModuller();
     // Ayarlar sayfasında modül aç/kapa yapılınca sidebar'ı refresh'siz güncelle
     window.addEventListener("moduller-degisti", cekModuller);
