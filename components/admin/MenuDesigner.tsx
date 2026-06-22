@@ -49,6 +49,18 @@ type Settings = {
   fiyatFs: number;
   aciklamaFs: number;
   restoranAdiFs: number;
+  // Çerçeve
+  cerceveler: CerceveSetting[];
+};
+
+type CerceveTip = "tek-cizgi" | "cift-cizgi" | "kose-sule" | "art-deco" | "noktali";
+
+type CerceveSetting = {
+  id: number;
+  tip: CerceveTip;
+  renk: string;
+  kalinlik: number; // px (ekran), mm'ye çevrilir
+  icBoşluk: number; // mm
 };
 
 const GOOGLE_FONTS = [
@@ -78,6 +90,7 @@ const DEFAULT: Settings = {
   kategoriRenk: "#1a1a1a", urunRenk: "#1a1a1a", fiyatRenk: "#c8860a", aciklamaRenk: "#666666",
   baslikFont: "Playfair Display", kategoriFont: "Playfair Display", urunFont: "Inter",
   kategoriFs: 14, urunFs: 11, fiyatFs: 11, aciklamaFs: 9, restoranAdiFs: 28,
+  cerceveler: [],
 };
 
 // ── Ayar paneli bölümleri ──────────────────────────────
@@ -147,6 +160,60 @@ function Preview({
           opacity: s.bgOpacity,
         }} />
       )}
+
+      {/* Çerçeveler */}
+      {s.cerceveler.map(c => {
+        const inset = c.icBoşluk * MM;
+        const px = c.kalinlik;
+        const W = w * MM, H = h * MM;
+        const x = inset, y = inset, rw = W - inset * 2, rh = H - inset * 2;
+        const renk = c.renk;
+
+        if (c.tip === "tek-cizgi") return (
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px} />
+          </svg>
+        );
+        if (c.tip === "cift-cizgi") return (
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 2.5} />
+            <rect x={x + px * 4} y={y + px * 4} width={rw - px * 8} height={rh - px * 8} fill="none" stroke={renk} strokeWidth={px} />
+          </svg>
+        );
+        if (c.tip === "noktali") return (
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px} strokeDasharray={`${px * 2} ${px * 3}`} />
+          </svg>
+        );
+        if (c.tip === "art-deco") return (
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 3} />
+            <rect x={x + px * 5} y={y + px * 5} width={rw - px * 10} height={rh - px * 10} fill="none" stroke={renk} strokeWidth={px * 0.8} />
+            <rect x={x + px * 7} y={y + px * 7} width={rw - px * 14} height={rh - px * 14} fill="none" stroke={renk} strokeWidth={px * 0.8} />
+            {/* Köşe kareler */}
+            {([[x, y],[x+rw,y],[x,y+rh],[x+rw,y+rh]] as [number,number][]).map(([cx,cy],i) => (
+              <rect key={i} x={cx - px * 5} y={cy - px * 5} width={px * 10} height={px * 10} fill={renk} />
+            ))}
+          </svg>
+        );
+        if (c.tip === "kose-sule") {
+          const cs = px * 18; // köşe süsü boyutu
+          const path = (tx: number, ty: number, sx: number, sy: number) =>
+            `M${tx} ${ty + sy * cs * 0.3} Q${tx} ${ty} ${tx + sx * cs * 0.3} ${ty}
+             M${tx + sx * cs * 0.5} ${ty} L${tx + sx * cs * 0.8} ${ty} M${tx} ${ty + sy * cs * 0.5} L${tx} ${ty + sy * cs * 0.8}
+             M${tx + sx * cs * 0.15} ${ty + sy * cs * 0.15} Q${tx + sx * cs * 0.35} ${ty} ${tx + sx * cs * 0.5} ${ty + sy * cs * 0.15}
+             Q${tx + sx * cs * 0.35} ${ty + sy * cs * 0.35} ${tx + sx * cs * 0.15} ${ty + sy * cs * 0.15}`;
+          return (
+            <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+              <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 0.8} />
+              {([[x,y,1,1],[x+rw,y,-1,1],[x,y+rh,1,-1],[x+rw,y+rh,-1,-1]] as [number,number,number,number][]).map(([tx,ty,sx,sy],i) => (
+                <path key={i} d={path(tx,ty,sx,sy)} fill="none" stroke={renk} strokeWidth={px * 1.5} strokeLinecap="round" />
+              ))}
+            </svg>
+          );
+        }
+        return null;
+      })}
 
       {/* İçerik */}
       <div style={{ position: "relative", padding: s.marginMm * MM }}>
@@ -810,13 +877,93 @@ export default function MenuDesigner({
               <div className="flex items-center gap-2">
                 <input type="range" min={7} max={20} value={s[key] as number}
                   onChange={e => set(key, +e.target.value)} className="flex-1" />
-                <span className="text-xs w-8 text-right" style={{ color: "var(--text-muted)" }}>{s[key]}px</span>
+                <span className="text-xs w-8 text-right" style={{ color: "var(--text-muted)" }}>{s[key] as number}px</span>
               </div>
             </Row>
           ))}
         </Section>
 
         {/* Renkler */}
+        {/* Çerçeve Bölümü */}
+        <Section title="Çerçeve">
+          {s.cerceveler.length === 0 && (
+            <p className="text-xs px-1 pb-1" style={{ color: "var(--text-muted)" }}>Henüz çerçeve eklenmedi.</p>
+          )}
+          {s.cerceveler.map((c, idx) => (
+            <div key={c.id} className="rounded-xl p-3 mb-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium" style={{ color: "var(--text)" }}>Çerçeve {idx + 1}</span>
+                <button onClick={() => set("cerceveler", s.cerceveler.filter(x => x.id !== c.id))}
+                  className="text-xs px-2 py-0.5 rounded" style={{ color: "#EF4444", backgroundColor: "#EF444415" }}>
+                  Kaldır
+                </button>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Stil</p>
+                  <div className="grid grid-cols-3 gap-1">
+                    {([
+                      { key: "tek-cizgi",  label: "Tek Çizgi" },
+                      { key: "cift-cizgi", label: "Çift Çizgi" },
+                      { key: "noktali",    label: "Noktalı" },
+                      { key: "art-deco",   label: "Art Deco" },
+                      { key: "kose-sule",  label: "Köşe Süsü" },
+                    ] as const).map(({ key, label }) => (
+                      <button key={key}
+                        onClick={() => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, tip: key } : x))}
+                        className="py-1 rounded text-center border text-xs transition-all"
+                        style={{
+                          borderColor: c.tip === key ? "var(--gold)" : "var(--border)",
+                          backgroundColor: c.tip === key ? "var(--gold)" : "transparent",
+                          color: c.tip === key ? "#fff" : "var(--text-muted)",
+                        }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1">
+                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Renk</p>
+                    <div className="flex gap-1.5 items-center">
+                      <input type="color" value={c.renk}
+                        onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, renk: e.target.value } : x))}
+                        className="w-7 h-7 rounded border cursor-pointer shrink-0" style={{ padding: 1 }} />
+                      <input type="text" value={c.renk}
+                        onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, renk: e.target.value } : x))}
+                        className={inp} />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Kalınlık</p>
+                    <div className="flex items-center gap-1">
+                      <input type="range" min={0.5} max={4} step={0.5} value={c.kalinlik}
+                        onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, kalinlik: +e.target.value } : x))}
+                        className="flex-1" />
+                      <span className="text-xs w-6" style={{ color: "var(--text-muted)" }}>{c.kalinlik}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>İç Boşluk (mm)</p>
+                  <div className="flex items-center gap-1">
+                    <input type="range" min={2} max={20} step={1} value={c.icBoşluk}
+                      onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, icBoşluk: +e.target.value } : x))}
+                      className="flex-1" />
+                    <span className="text-xs w-8" style={{ color: "var(--text-muted)" }}>{c.icBoşluk}mm</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button
+            onClick={() => set("cerceveler", [...s.cerceveler, { id: Date.now(), tip: "tek-cizgi", renk: "#1a1a1a", kalinlik: 1, icBoşluk: 6 }])}
+            className="w-full py-2 rounded-xl text-xs font-medium border-2 border-dashed transition-all hover:opacity-80"
+            style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>
+            + Çerçeve Ekle
+          </button>
+        </Section>
+
         <Section title="Renkler">
           {([
             ["Kategori", "kategoriRenk"],
