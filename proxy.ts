@@ -6,7 +6,7 @@ export function proxy(req: NextRequest) {
   if (pathname.startsWith("/admin")) {
     const session = req.cookies.get("admin_session");
     if (session?.value !== "authenticated") {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.rewrite(new URL("/_not-found", req.url));
     }
   }
 
