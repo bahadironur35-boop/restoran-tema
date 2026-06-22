@@ -186,8 +186,8 @@ function Preview({
     return acc;
   }, {});
 
-  // İçerik oluşturma — hem gizli printRef hem de görsel sayfalar için
-  const renderPageContent = () => (<>
+  // Arka plan + çerçeveler — her sayfa kartında ve gizli div'de ayrı render edilir
+  const renderDekorasyon = () => (<>
       {/* Arka plan resmi */}
       {s.bgImage && (
         <div style={{
@@ -358,8 +358,10 @@ function Preview({
           </svg>
         );
       })}
+    </>);
 
-      {/* İçerik */}
+  // Sadece menü içeriği — kaydırılarak sayfa kartlarına yansıtılır
+  const renderMenuIcerigi = () => (
       <div style={{ position: "relative", padding: s.marginMm * MM }}>
 
         {/* Başlık */}
@@ -492,7 +494,7 @@ function Preview({
           );
         })()}
       </div>
-    </>);
+  );
 
   // Sayfa kartı — içeriği belirli Y konumundan keser
   const renderPageCard = (pageIdx: number) => (
@@ -512,9 +514,11 @@ function Preview({
         fontFamily: s.urunFont + ", sans-serif",
         boxShadow: "0 4px 32px rgba(0,0,0,0.22)",
       }}>
-        {/* İçerik bu sayfa için kaydırılmış */}
+        {/* Dekorasyon: arka plan + çerçeve — her sayfada tam boyutta */}
+        {renderDekorasyon()}
+        {/* Menü içeriği bu sayfa için kaydırılmış */}
         <div style={{ position: "absolute", top: -pageIdx * pageH, left: 0, right: 0 }}>
-          {renderPageContent()}
+          {renderMenuIcerigi()}
         </div>
       </div>
     </div>
@@ -534,7 +538,8 @@ function Preview({
           backgroundColor: s.bgColor,
           fontFamily: s.urunFont + ", sans-serif",
         }}>
-        {renderPageContent()}
+        {renderDekorasyon()}
+        {renderMenuIcerigi()}
       </div>
 
       {/* Görsel sayfa kartları */}
