@@ -491,6 +491,8 @@ function Preview({
             </div>
           );
         })()}
+        {/* Alt boşluk garantisi */}
+        <div style={{ height: s.marginMm * MM }} />
       </div>
   );
 
@@ -518,30 +520,41 @@ function Preview({
         const y = (i + 1) * pageH;
         return (
           <div key={i} style={{ position: "absolute", left: 0, right: 0, top: y, zIndex: 20, pointerEvents: "none" }}>
-            {/* Alt gölge — önceki sayfanın kapandığını gösterir */}
-            <div style={{
-              height: 18,
-              background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 100%)",
-              marginTop: -18,
-            }} />
-            {/* Sayfa arası boşluk */}
-            <div style={{
-              height: GAP,
-              background: "#64748b",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              gap: 12,
-            }}>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.2)", marginLeft: 12 }} />
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap", letterSpacing: "0.08em" }}>
-                SAYFA {i + 2}
-              </span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.2)", marginRight: 12 }} />
+            {/* Alt gölge */}
+            <div style={{ height: 14, background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 100%)", marginTop: -14 }} />
+            {/* Sayfa bandı */}
+            <div style={{ background: "#475569", padding: "6px 0 0" }}>
+              {/* Sayfa numarası */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px", marginBottom: 6 }}>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.15)" }} />
+                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: "0.12em" }}>SAYFA {i + 2}</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.15)" }} />
+              </div>
+              {/* Sonraki sayfanın header'ı */}
+              <div style={{
+                backgroundColor: s.bgColor,
+                padding: `${s.marginMm * MM * 0.7}px ${s.marginMm * MM}px ${s.marginMm * MM * 0.5}px`,
+                textAlign: "center",
+              }}>
+                {s.logoUrl && (
+                  <img src={s.logoUrl} alt="logo"
+                    style={{ maxHeight: 44, maxWidth: 120, margin: "0 auto 4px", display: "block", objectFit: "contain" }} />
+                )}
+                {s.restoranAdi && (
+                  <div style={{ fontFamily: s.baslikFont + ", serif", fontSize: s.restoranAdiFs * 0.85, fontWeight: 700, color: s.kategoriRenk, letterSpacing: "0.08em" }}>
+                    {s.restoranAdi}
+                  </div>
+                )}
+                {s.adres && (
+                  <div style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: 7, color: s.aciklamaRenk, marginTop: 2 }}>
+                    {s.adres}
+                  </div>
+                )}
+                <div style={{ height: 1, backgroundColor: s.kategoriRenk, opacity: 0.15, margin: "6px 0 0" }} />
+              </div>
             </div>
-            {/* Üst gölge — yeni sayfanın açıldığını gösterir */}
-            <div style={{
-              height: 18,
-              background: "linear-gradient(to top, rgba(0,0,0,0.18) 0%, transparent 100%)",
-            }} />
+            {/* Üst gölge */}
+            <div style={{ height: 14, background: "linear-gradient(to top, rgba(0,0,0,0.12) 0%, transparent 100%)" }} />
           </div>
         );
       })}
