@@ -326,7 +326,7 @@ function Preview({
         const corners: [number, number][] = [[x, y], [x + rw, y], [x + rw, y + rh], [x, y + rh]];
 
         return (
-          <svg key={`${c.id}-p${pi}`} style={{ position: "absolute", top: pageOffsetY, left: 0, pointerEvents: "none", overflow: "visible", opacity: c.opacity }} width={W} height={H}>
+          <svg key={`${c.id}-p${pi}`} style={{ position: "absolute", top: pageOffsetY, left: 0, pointerEvents: "none", overflow: "visible", opacity: c.opacity, clipPath: "inset(0)" }} width={W} height={H}>
             {/* Kenar çizgisi */}
             {c.kenarStil === "tek-cizgi" && (c.kose === "bevel"
               ? <path d={bevelPath} fill="none" stroke={r} strokeWidth={px} />
