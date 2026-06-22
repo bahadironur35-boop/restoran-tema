@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import AdminShell from "@/components/admin/AdminShell";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const rows = await prisma.ayar.findMany();
   const moduller: Record<string, string> = {};
