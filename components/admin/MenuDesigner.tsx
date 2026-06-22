@@ -196,11 +196,12 @@ function Preview({
         }} />
       )}
 
-      {/* Çerçeveler */}
-      {s.cerceveler.map(c => {
+      {/* Çerçeveler — her sayfa için tekrar */}
+      {Array.from({ length: pageCount }, (_, pi) => s.cerceveler.map(c => {
         const inset = c.icBoşluk * MM;
         const px = c.kalinlik;
         const W = w * MM, H = h * MM;
+        const pageOffsetY = pi * H;
         const x = inset, y = inset, rw = W - inset * 2, rh = H - inset * 2;
         const r = c.renk;
         const f = (n: number) => +n.toFixed(2);
@@ -325,7 +326,7 @@ function Preview({
         const corners: [number, number][] = [[x, y], [x + rw, y], [x + rw, y + rh], [x, y + rh]];
 
         return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible", opacity: c.opacity }} width={W} height={H}>
+          <svg key={`${c.id}-p${pi}`} style={{ position: "absolute", top: pageOffsetY, left: 0, pointerEvents: "none", overflow: "visible", opacity: c.opacity }} width={W} height={H}>
             {/* Kenar çizgisi */}
             {c.kenarStil === "tek-cizgi" && (c.kose === "bevel"
               ? <path d={bevelPath} fill="none" stroke={r} strokeWidth={px} />
@@ -355,7 +356,7 @@ function Preview({
             ))}
           </svg>
         );
-      })}
+      }))}
     </>);
 
   // Sadece menü içeriği — kaydırılarak sayfa kartlarına yansıtılır
@@ -516,39 +517,17 @@ function Preview({
       </div>
 
       {/* Sayfa kırılma göstergeleri — printRef dışında, PDF/baskıya girmez */}
-      {Array.from({ length: pageCount - 1 }, (_, i) => {
-        // Bandı marginMm kadar erken koy → sayfa 1 altında boşluk görünür
-        const margin = s.marginMm * MM;
-        const y = (i + 1) * pageH - margin;
-        return (
-          <div key={i} style={{ position: "absolute", left: 0, right: 0, top: y, zIndex: 20, pointerEvents: "none" }}>
-            {/* Sayfa ayracı + sonraki sayfa header'ı */}
-            <div style={{ background: "#e2e8f0", border: "1px solid #cbd5e1" }}>
-              <div style={{
-                backgroundColor: s.bgColor,
-                padding: `${margin * 0.6}px ${margin}px ${margin * 0.4}px`,
-                textAlign: "center",
-                borderBottom: `1px solid rgba(0,0,0,0.06)`,
-              }}>
-                {s.logoUrl && (
-                  <img src={s.logoUrl} alt="logo"
-                    style={{ maxHeight: 40, maxWidth: 110, margin: "0 auto 3px", display: "block", objectFit: "contain" }} />
-                )}
-                {s.restoranAdi && (
-                  <div style={{ fontFamily: s.baslikFont + ", serif", fontSize: s.restoranAdiFs * 0.8, fontWeight: 700, color: s.kategoriRenk, letterSpacing: "0.08em" }}>
-                    {s.restoranAdi}
-                  </div>
-                )}
-                {s.adres && (
-                  <div style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: 7, color: s.aciklamaRenk, marginTop: 2 }}>
-                    {s.adres}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {Array.from({ length: pageCount - 1 }, (_, i) => (
+        <div key={i} style={{
+          position: "absolute",
+          left: -8, right: -8,
+          top: (i + 1) * pageH - 1,
+          height: 2,
+          background: "#94a3b8",
+          zIndex: 20,
+          pointerEvents: "none",
+        }} />
+      ))}
     </div>
   );
 }
