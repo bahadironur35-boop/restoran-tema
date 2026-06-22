@@ -114,12 +114,11 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
+function Section({ title, children, open, onToggle }: { title: string; children: React.ReactNode; open: boolean; onToggle: () => void }) {
   return (
     <div className="border-b" style={{ borderColor: "var(--border)" }}>
       <button className="flex items-center justify-between w-full px-4 py-3 text-xs font-semibold uppercase tracking-wider"
-        style={{ color: "var(--text-muted)" }} onClick={() => setOpen(p => !p)}>
+        style={{ color: "var(--text-muted)" }} onClick={onToggle}>
         {title}
         {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
       </button>
@@ -365,6 +364,11 @@ export default function MenuDesigner({
   });
   const printRef = useRef<HTMLDivElement>(null!);
 
+  const SECTIONS = ["Sayfa","İçerik","Zemin","Restoran Başlığı","Düzen","Fontlar","Yazı Boyutları","Çerçeve","Renkler"] as const;
+  type SectionKey = typeof SECTIONS[number];
+  const [acikSection, setAcikSection] = useState<SectionKey>("Sayfa");
+  const sec = (title: SectionKey) => ({ open: acikSection === title, onToggle: () => setAcikSection(p => p === title ? ("" as SectionKey) : title) });
+
   // İçerik seçimi
   const [katSira, setKatSira]           = useState<string[]>(kategoriler);
   const [gizliKat, setGizliKat]         = useState<Set<string>>(new Set());
@@ -570,7 +574,7 @@ export default function MenuDesigner({
         </div>
 
         {/* Sayfa */}
-        <Section title="Sayfa">
+        <Section title="Sayfa" {...sec("Sayfa")}>
           <Row label="Boyut">
             <select value={s.boyut} onChange={e => set("boyut", e.target.value as Settings["boyut"])} className={sel}>
               <option value="A4">A4 (210×297mm)</option>
@@ -615,7 +619,7 @@ export default function MenuDesigner({
 
         {/* Zemin */}
         {/* İçerik */}
-        <Section title="İçerik">
+        <Section title="İçerik" {...sec("İçerik")}>
           <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
             Kategorileri ve ürünleri seç/çıkar, sırasını değiştir.
           </p>
@@ -704,7 +708,7 @@ export default function MenuDesigner({
           </div>
         </Section>
 
-        <Section title="Zemin">
+        <Section title="Zemin" {...sec("Zemin")}>
           <Row label="Renk">
             <div className="flex gap-2 items-center">
               <input type="color" value={s.bgColor} onChange={e => set("bgColor", e.target.value)}
@@ -727,7 +731,7 @@ export default function MenuDesigner({
         </Section>
 
         {/* Başlık */}
-        <Section title="Restoran Başlığı">
+        <Section title="Restoran Başlığı" {...sec("Restoran Başlığı")}>
           <Row label="Logo URL">
             <input type="text" placeholder="https://... (logo resmi)" value={s.logoUrl}
               onChange={e => set("logoUrl", e.target.value)} className={inp} />
@@ -751,7 +755,7 @@ export default function MenuDesigner({
         </Section>
 
         {/* Düzen */}
-        <Section title="Düzen">
+        <Section title="Düzen" {...sec("Düzen")}>
           <Row label="Kolon">
             <div className="flex gap-2">
               {([1,2,3] as const).map(v => (
@@ -831,7 +835,7 @@ export default function MenuDesigner({
         </Section>
 
         {/* Fontlar */}
-        <Section title="Fontlar">
+        <Section title="Fontlar" {...sec("Fontlar")}>
           <Row label="Başlık Fontu">
             <select value={s.baslikFont} onChange={e => set("baslikFont", e.target.value)} className={sel}>
               {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
@@ -850,7 +854,7 @@ export default function MenuDesigner({
         </Section>
 
         {/* Font Boyutları */}
-        <Section title="Yazı Boyutları">
+        <Section title="Yazı Boyutları" {...sec("Yazı Boyutları")}>
           {([
             ["Kategori", "kategoriFs"],
             ["Ürün adı", "urunFs"],
@@ -869,7 +873,7 @@ export default function MenuDesigner({
 
         {/* Renkler */}
         {/* Çerçeve Bölümü */}
-        <Section title="Çerçeve">
+        <Section title="Çerçeve" {...sec("Çerçeve")}>
           {s.cerceveler.length === 0 && (
             <p className="text-xs px-1 pb-1" style={{ color: "var(--text-muted)" }}>Henüz çerçeve eklenmedi.</p>
           )}
@@ -948,7 +952,7 @@ export default function MenuDesigner({
           </button>
         </Section>
 
-        <Section title="Renkler">
+        <Section title="Renkler" {...sec("Renkler")}>
           {([
             ["Kategori", "kategoriRenk"],
             ["Ürün adı", "urunRenk"],
