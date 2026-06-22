@@ -46,6 +46,7 @@ export default function AdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoFocus
+              autoComplete="off"
               className="input-field w-full"
               placeholder="kullanici@restoran.com"
             />
