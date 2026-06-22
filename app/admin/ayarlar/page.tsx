@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 const SWITCH_SECTIONS = [
   {
@@ -191,6 +192,7 @@ const DEFAULT_OFF_SWITCHES = new Set([
 ]);
 
 export default function AyarlarPage() {
+  const router = useRouter();
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -299,10 +301,8 @@ export default function AyarlarPage() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ ...form, [f.name]: yeniDeger }),
                       });
-                      // Sidebar'ın modülleri anında güncellemesi için yeni değeri event ile ilet
-                      window.dispatchEvent(new CustomEvent("moduller-degisti", {
-                        detail: { [f.name]: yeniDeger },
-                      }));
+                      // Layout server component'i yeniden render et → sidebar anında güncellenir
+                      router.refresh();
                     }}
                     className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200"
                     style={{ backgroundColor: form[f.name] === "true" ? "#1A73E8" : "var(--border)" }}

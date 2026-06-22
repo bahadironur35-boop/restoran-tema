@@ -79,7 +79,7 @@ function LiveClock() {
 
 type ShellToast = { id: number; masaNo: number; tip: string };
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+export default function AdminShell({ children, moduller }: { children: React.ReactNode; moduller: Record<string, string> }) {
   const pathname = usePathname();
 
   if (pathname === "/login") return <>{children}</>;
@@ -89,24 +89,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [collapsed, setCollapsed] = useState(false);
   const [me, setMe] = useState<{ name: string; email: string; role: string } | null>(null);
   const [shellToastlar, setShellToastlar] = useState<ShellToast[]>([]);
-  const [moduller, setModuller] = useState<Record<string, string>>({});
   const shellCounter = useRef(0);
   const bildirildi = useRef<Set<number>>(new Set());
 
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     fetch("/api/admin/me").then((r) => r.ok ? r.json() : null).then(setMe);
-    const cekModuller = () =>
-      fetch(`/api/admin/ayarlar?t=${Date.now()}`, { cache: "no-store" })
-        .then((r) => r.ok ? r.json() : {}).then(setModuller);
-    cekModuller();
-    // Ayarlar sayfasında modül aç/kapa yapılınca değeri event'ten al — ağ isteği gerekmez
-    const onModulDegis = (e: Event) => {
-      const detail = (e as CustomEvent<Record<string, string>>).detail;
-      if (detail) setModuller((prev) => ({ ...prev, ...detail }));
-    };
-    window.addEventListener("moduller-degisti", onModulDegis);
-    return () => window.removeEventListener("moduller-degisti", onModulDegis);
   }, []);
 
   // Global garson talebi dinleyici — her sayfada çalışır
