@@ -30,6 +30,12 @@ type Settings = {
   dolguGoster: boolean;
   dolguStil: "nokta" | "cizgi" | "orta-nokta" | "tire" | "kare";
   dolguRenk: string;
+  // Boşluklar
+  kategoriAraBoşluk: number;
+  urunAraBoşluk: number;
+  kategoriBaslikAlt: number;
+  kolonAraBoşluk: number;
+  kategoriHizalama: "left" | "center" | "right";
   // Başlık
   logoUrl: string;
   restoranAdi: string;
@@ -92,6 +98,7 @@ const DEFAULT: Settings = {
   kolonSayisi: 2, kategoriStil: "cizgi",
   fotografGoster: false, fotografBoyut: 48, fotografRadius: 4, aciklamaGoster: true, fiyatHizalama: "sag",
   dolguGoster: true, dolguStil: "nokta", dolguRenk: "#999999",
+  kategoriAraBoşluk: 20, urunAraBoşluk: 6, kategoriBaslikAlt: 6, kolonAraBoşluk: 12, kategoriHizalama: "left",
   logoUrl: "", restoranAdi: "", altBaslik: "", adres: "",
   kategoriRenk: "#1a1a1a", urunRenk: "#1a1a1a", fiyatRenk: "#c8860a", aciklamaRenk: "#666666",
   baslikFont: "Playfair Display", kategoriFont: "Playfair Display", urunFont: "Inter",
@@ -376,32 +383,36 @@ function Preview({
           </div>
         )}
 
-        {/* Kategoriler */}
-        <div style={{
-          columns: s.kolonSayisi,
-          columnGap: s.marginMm * MM,
-        }}>
-          {aktifKat.map(cat => {
+        {/* Kategoriler — manuel grid */}
+        {(() => {
+          const n = s.kolonSayisi;
+          const visibleCats = aktifKat.filter(c => (grouped[c] ?? []).length > 0);
+          const perCol = Math.ceil(visibleCats.length / n);
+          const cols: string[][] = Array.from({ length: n }, (_, i) =>
+            visibleCats.slice(i * perCol, (i + 1) * perCol)
+          );
+
+          const renderCat = (cat: string) => {
             const catItems = grouped[cat] ?? [];
-            if (catItems.length === 0) return null;
             return (
-              <div key={cat} style={{ breakInside: "avoid", marginBottom: 14 }}>
+              <div key={cat} style={{ marginBottom: s.kategoriAraBoşluk }}>
                 {/* Kategori başlığı */}
                 {s.kategoriStil === "kutu" ? (
                   <div style={{
                     backgroundColor: s.kategoriRenk, color: "#fff",
                     fontFamily: s.kategoriFont + ", serif",
                     fontSize: s.kategoriFs, fontWeight: 700,
-                    padding: "3px 8px", borderRadius: 4, marginBottom: 6,
+                    padding: "3px 8px", borderRadius: 4, marginBottom: s.kategoriBaslikAlt,
                     textTransform: "uppercase", letterSpacing: "0.08em",
+                    textAlign: s.kategoriHizalama,
                   }}>{cat}</div>
                 ) : (
-                  <div style={{ marginBottom: 6 }}>
+                  <div style={{ marginBottom: s.kategoriBaslikAlt }}>
                     <div style={{
                       fontFamily: s.kategoriFont + ", serif",
                       fontSize: s.kategoriFs, fontWeight: 700,
                       color: s.kategoriRenk, textTransform: "uppercase",
-                      letterSpacing: "0.08em",
+                      letterSpacing: "0.08em", textAlign: s.kategoriHizalama,
                     }}>{cat}</div>
                     {s.kategoriStil === "cizgi" && (
                       <div style={{ height: 1, backgroundColor: s.kategoriRenk, opacity: 0.3, marginTop: 2 }} />
@@ -410,7 +421,7 @@ function Preview({
                 )}
 
                 {/* Ürünler */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: s.urunAraBoşluk }}>
                   {catItems.map(item => (
                     <div key={item.id} style={{ display: "flex", gap: 6, breakInside: "avoid" }}>
                       {s.fotografGoster && item.image && (
@@ -455,8 +466,18 @@ function Preview({
                 </div>
               </div>
             );
-          })}
-        </div>
+          };
+
+          return (
+            <div style={{ display: "flex", gap: s.kolonAraBoşluk * MM, alignItems: "flex-start" }}>
+              {cols.map((colCats, ci) => (
+                <div key={ci} style={{ flex: 1, minWidth: 0 }}>
+                  {colCats.map(cat => renderCat(cat))}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -477,7 +498,7 @@ export default function MenuDesigner({
   });
   const printRef = useRef<HTMLDivElement>(null!);
 
-  const SECTIONS = ["Sayfa","İçerik","Zemin","Restoran Başlığı","Düzen","Fontlar","Yazı Boyutları","Çerçeve","Renkler"] as const;
+  const SECTIONS = ["Sayfa","İçerik","Zemin","Restoran Başlığı","Düzen","Boşluklar","Fontlar","Yazı Boyutları","Çerçeve","Renkler"] as const;
   type SectionKey = typeof SECTIONS[number];
   const [acikSection, setAcikSection] = useState<SectionKey>("Sayfa");
   const sec = (title: SectionKey) => ({ open: acikSection === title, onToggle: () => setAcikSection(p => p === title ? ("" as SectionKey) : title) });
@@ -958,6 +979,51 @@ export default function MenuDesigner({
               </Row>
             </>
           )}
+        </Section>
+
+        {/* Boşluklar */}
+        <Section title="Boşluklar" {...sec("Boşluklar" as typeof SECTIONS[number])}>
+          <Row label="Kategori Arası">
+            <div className="flex items-center gap-2">
+              <input type="range" min={8} max={60} step={2} value={s.kategoriAraBoşluk}
+                onChange={e => set("kategoriAraBoşluk", +e.target.value)} className="flex-1" />
+              <span className="text-xs w-10 text-right" style={{ color: "var(--text-muted)" }}>{s.kategoriAraBoşluk}px</span>
+            </div>
+          </Row>
+          <Row label="Ürün Arası">
+            <div className="flex items-center gap-2">
+              <input type="range" min={2} max={24} step={1} value={s.urunAraBoşluk}
+                onChange={e => set("urunAraBoşluk", +e.target.value)} className="flex-1" />
+              <span className="text-xs w-10 text-right" style={{ color: "var(--text-muted)" }}>{s.urunAraBoşluk}px</span>
+            </div>
+          </Row>
+          <Row label="Başlık Alt Boşluk">
+            <div className="flex items-center gap-2">
+              <input type="range" min={2} max={20} step={1} value={s.kategoriBaslikAlt}
+                onChange={e => set("kategoriBaslikAlt", +e.target.value)} className="flex-1" />
+              <span className="text-xs w-10 text-right" style={{ color: "var(--text-muted)" }}>{s.kategoriBaslikAlt}px</span>
+            </div>
+          </Row>
+          <Row label="Kolon Arası">
+            <div className="flex items-center gap-2">
+              <input type="range" min={4} max={30} step={1} value={s.kolonAraBoşluk}
+                onChange={e => set("kolonAraBoşluk", +e.target.value)} className="flex-1" />
+              <span className="text-xs w-10 text-right" style={{ color: "var(--text-muted)" }}>{s.kolonAraBoşluk}mm</span>
+            </div>
+          </Row>
+          <Row label="Kategori Hizalama">
+            <div className="flex gap-1">
+              {([["left","◀ Sol"],["center","● Orta"],["right","Sağ ▶"]] as const).map(([v, label]) => (
+                <button key={v} onClick={() => set("kategoriHizalama", v)}
+                  className="flex-1 py-1.5 rounded text-xs border transition-all"
+                  style={{
+                    borderColor: s.kategoriHizalama === v ? "var(--gold)" : "var(--border)",
+                    backgroundColor: s.kategoriHizalama === v ? "var(--gold)" : "transparent",
+                    color: s.kategoriHizalama === v ? "#fff" : "var(--text-muted)",
+                  }}>{label}</button>
+              ))}
+            </div>
+          </Row>
         </Section>
 
         {/* Fontlar */}
