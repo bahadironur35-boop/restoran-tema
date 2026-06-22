@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
   if (email) {
     const user = await prisma.kullanici.findUnique({ where: { email } });
     if (user && user.active && await bcrypt.compare(password, user.password)) {
-      const res = NextResponse.json({ success: true, role: user.role });
-      res.cookies.set(SESSION_COOKIE, makeSessionValue(user.id, user.role as import("@/lib/auth").Role), COOKIE_OPTS);
+      const cookieVal = user.isSuperAdmin ? SUPERADMIN_VALUE : makeSessionValue(user.id, user.role as import("@/lib/auth").Role);
+      const res = NextResponse.json({ success: true, role: user.isSuperAdmin ? "admin" : user.role });
+      res.cookies.set(SESSION_COOKIE, cookieVal, COOKIE_OPTS);
       return res;
     }
     return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
