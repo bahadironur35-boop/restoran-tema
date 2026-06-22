@@ -355,7 +355,7 @@ function Preview({
       })}
 
       {/* İçerik */}
-      <div style={{ position: "relative", padding: s.marginMm * MM }}>
+      <div style={{ position: "relative", padding: s.marginMm * MM, paddingBottom: s.marginMm * MM * 1.5 }}>
 
         {/* Başlık */}
         {(s.logoUrl || s.restoranAdi) && (
@@ -383,14 +383,22 @@ function Preview({
           </div>
         )}
 
-        {/* Kategoriler — manuel grid */}
+        {/* Kategoriler — manuel grid, ürün sayısına göre dengeli dağıtım */}
         {(() => {
           const n = s.kolonSayisi;
           const visibleCats = aktifKat.filter(c => (grouped[c] ?? []).length > 0);
-          const perCol = Math.ceil(visibleCats.length / n);
-          const cols: string[][] = Array.from({ length: n }, (_, i) =>
-            visibleCats.slice(i * perCol, (i + 1) * perCol)
-          );
+
+          // Kategori sayısı değil, ürün sayısı bazında dengeli dağıt
+          const itemCounts = visibleCats.map(c => (grouped[c] ?? []).length);
+          const total = itemCounts.reduce((a, b) => a + b, 0);
+          const target = total / n;
+          const cols: string[][] = Array.from({ length: n }, () => []);
+          let col = 0, colSum = 0;
+          visibleCats.forEach((cat, i) => {
+            cols[col].push(cat);
+            colSum += itemCounts[i];
+            if (col < n - 1 && colSum >= target * (col + 1)) col++;
+          });
 
           const renderCat = (cat: string) => {
             const catItems = grouped[cat] ?? [];
