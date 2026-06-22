@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useModuller } from "@/contexts/ModullerContext";
 
 const SWITCH_SECTIONS = [
   {
@@ -193,6 +194,7 @@ const DEFAULT_OFF_SWITCHES = new Set([
 
 export default function AyarlarPage() {
   const router = useRouter();
+  const { setModul } = useModuller();
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -296,13 +298,13 @@ export default function AyarlarPage() {
                     onClick={async () => {
                       const yeniDeger = form[f.name] === "true" ? "false" : "true";
                       setForm((p) => ({ ...p, [f.name]: yeniDeger }));
+                      setModul(f.name, yeniDeger); // sidebar optimistic update
                       await fetch("/api/admin/ayarlar", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ ...form, [f.name]: yeniDeger }),
                       });
-                      // Layout server component'i yeniden render et → sidebar anında güncellenir
-                      router.refresh();
+                      router.refresh(); // layout server component'i DB'den senkronize et
                     }}
                     className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200"
                     style={{ backgroundColor: form[f.name] === "true" ? "#1A73E8" : "var(--border)" }}

@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Menu, X, Bell, Globe, LogOut, Clock, ChefHat, UserCog, ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import CalendarDropdown from "./CalendarDropdown";
+import { ModullerContext } from "@/contexts/ModullerContext";
 
 type Role = "admin" | "mudur" | "garson" | "sef";
 
@@ -79,8 +80,13 @@ function LiveClock() {
 
 type ShellToast = { id: number; masaNo: number; tip: string };
 
-export default function AdminShell({ children, moduller }: { children: React.ReactNode; moduller: Record<string, string> }) {
+export default function AdminShell({ children, moduller: initialModuller }: { children: React.ReactNode; moduller: Record<string, string> }) {
   const pathname = usePathname();
+  const [moduller, setModuller] = useState(initialModuller);
+
+  const setModul = useCallback((key: string, value: string) => {
+    setModuller((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   if (pathname === "/login") return <>{children}</>;
 
@@ -216,6 +222,7 @@ export default function AdminShell({ children, moduller }: { children: React.Rea
   );
 
   return (
+    <ModullerContext.Provider value={{ moduller, setModul }}>
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* Desktop sidebar */}
@@ -326,5 +333,6 @@ export default function AdminShell({ children, moduller }: { children: React.Rea
         </div>
       )}
     </div>
+    </ModullerContext.Provider>
   );
 }
