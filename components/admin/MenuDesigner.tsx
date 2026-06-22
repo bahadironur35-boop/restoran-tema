@@ -170,9 +170,8 @@ function Preview({
   const pageH = h * MM;
 
   const [contentH, setContentH] = useState(pageH);
-  const measureRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = measureRef.current;
+    const el = printRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => setContentH(el.scrollHeight));
     ro.observe(el);
@@ -186,7 +185,6 @@ function Preview({
     return acc;
   }, {});
 
-  // Arka plan + çerçeveler — her sayfa kartında ve gizli div'de ayrı render edilir
   const renderDekorasyon = () => (<>
       {/* Arka plan resmi */}
       {s.bgImage && (
@@ -496,62 +494,46 @@ function Preview({
       </div>
   );
 
-  // Sayfa kartı — içeriği belirli Y konumundan keser
-  const renderPageCard = (pageIdx: number) => (
-    <div key={pageIdx} style={{ position: "relative", flexShrink: 0 }}>
-      {/* Sayfa numarası etiketi */}
-      {pageCount > 1 && (
-        <div style={{
-          position: "absolute", top: -22, right: 0,
-          fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.06em",
-        }}>
-          {pageIdx + 1} / {pageCount}
-        </div>
-      )}
-      <div style={{
-        width: w * MM,
-        // Son sayfa doğal büyür (bottom padding görünür), diğerleri sabit yükseklik
-        ...(pageIdx === pageCount - 1
-          ? { minHeight: pageH }
-          : { height: pageH, overflow: "hidden" }),
-        position: "relative",
-        backgroundColor: s.bgColor,
-        fontFamily: s.urunFont + ", sans-serif",
-        boxShadow: "0 4px 32px rgba(0,0,0,0.22)",
-      }}>
-        {/* Dekorasyon: arka plan + çerçeve — her sayfada tam boyutta */}
-        {renderDekorasyon()}
-        {/* Menü içeriği bu sayfa için kaydırılmış */}
-        <div style={{ position: "absolute", top: -pageIdx * pageH, left: 0, right: 0 }}>
-          {renderMenuIcerigi()}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <>
-      {/* Gizli tam-içerik div — PDF ve Yazdır için */}
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      {/* Tek akış div — PDF/Yazdır kaynağı */}
       <div
-        ref={(el) => {
-          (measureRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-          (printRef as React.MutableRefObject<HTMLDivElement>).current = el!;
-        }}
+        ref={printRef}
+        className="relative"
         style={{
-          position: "absolute", left: -9999, top: 0,
           width: w * MM,
+          minHeight: pageH,
           backgroundColor: s.bgColor,
           fontFamily: s.urunFont + ", sans-serif",
-        }}>
+        }}
+      >
         {renderDekorasyon()}
         {renderMenuIcerigi()}
       </div>
 
-      {/* Görsel sayfa kartları */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "flex-start", paddingTop: 28 }}>
-        {Array.from({ length: pageCount }, (_, i) => renderPageCard(i))}
-      </div>
-    </>
+      {/* Sayfa kırılma şeritleri — printRef dışında, PDF/baskıya girmez */}
+      {Array.from({ length: pageCount - 1 }, (_, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            top: (i + 1) * pageH,
+            left: 0, right: 0,
+            height: 2,
+            background: "repeating-linear-gradient(to right, #60a5fa 0, #60a5fa 8px, transparent 8px, transparent 14px)",
+            zIndex: 10,
+          }}
+        >
+          <span style={{
+            position: "absolute", right: 0, top: -18,
+            fontSize: 10, color: "#60a5fa", fontWeight: 600, letterSpacing: "0.05em",
+            background: "rgba(0,0,0,0.55)", padding: "2px 6px", borderRadius: 4,
+          }}>
+            Sayfa {i + 2}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
