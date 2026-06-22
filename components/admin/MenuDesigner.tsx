@@ -59,7 +59,8 @@ type CerceveSetting = {
   id: number;
   tip: CerceveTip;
   renk: string;
-  kalinlik: number; // px (ekran), mm'ye çevrilir
+  opacity: number; // 0–1
+  kalinlik: number;
   icBoşluk: number; // mm
 };
 
@@ -189,23 +190,23 @@ function Preview({
         const renk = c.renk;
 
         if (c.tip === "tek-cizgi") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
             <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px} />
           </svg>
         );
         if (c.tip === "cift-cizgi") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
             <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 2.5} />
             <rect x={x + px * 4} y={y + px * 4} width={rw - px * 8} height={rh - px * 8} fill="none" stroke={renk} strokeWidth={px} />
           </svg>
         );
         if (c.tip === "noktali") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
             <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px} strokeDasharray={`${px * 2} ${px * 3}`} />
           </svg>
         );
         if (c.tip === "art-deco") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
             <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 3} />
             <rect x={x + px * 5} y={y + px * 5} width={rw - px * 10} height={rh - px * 10} fill="none" stroke={renk} strokeWidth={px * 0.8} />
             <rect x={x + px * 7} y={y + px * 7} width={rw - px * 14} height={rh - px * 14} fill="none" stroke={renk} strokeWidth={px * 0.8} />
@@ -223,7 +224,7 @@ function Preview({
              M${tx + sx * cs * 0.15} ${ty + sy * cs * 0.15} Q${tx + sx * cs * 0.35} ${ty} ${tx + sx * cs * 0.5} ${ty + sy * cs * 0.15}
              Q${tx + sx * cs * 0.35} ${ty + sy * cs * 0.35} ${tx + sx * cs * 0.15} ${ty + sy * cs * 0.15}`;
           return (
-            <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} width={W} height={H}>
+            <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
               <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 0.8} />
               {([[x,y,1,1],[x+rw,y,-1,1],[x,y+rh,1,-1],[x+rw,y+rh,-1,-1]] as [number,number,number,number][]).map(([tx,ty,sx,sy],i) => (
                 <path key={i} d={path(tx,ty,sx,sy)} fill="none" stroke={renk} strokeWidth={px * 1.5} strokeLinecap="round" />
@@ -923,6 +924,12 @@ export default function MenuDesigner({
                     </div>
                   </div>
                   <div className="flex-1">
+                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Opaklık — {Math.round(c.opacity * 100)}%</p>
+                    <input type="range" min={0.05} max={1} step={0.05} value={c.opacity}
+                      onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, opacity: +e.target.value } : x))}
+                      className="w-full" />
+                  </div>
+                  <div className="flex-1">
                     <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Kalınlık</p>
                     <div className="flex items-center gap-1">
                       <input type="range" min={0.5} max={4} step={0.5} value={c.kalinlik}
@@ -945,7 +952,7 @@ export default function MenuDesigner({
             </div>
           ))}
           <button
-            onClick={() => set("cerceveler", [...s.cerceveler, { id: Date.now(), tip: "tek-cizgi", renk: "#1a1a1a", kalinlik: 1, icBoşluk: 6 }])}
+            onClick={() => set("cerceveler", [...s.cerceveler, { id: Date.now(), tip: "tek-cizgi", renk: "#1a1a1a", opacity: 1, kalinlik: 1, icBoşluk: 6 }])}
             className="w-full py-2 rounded-xl text-xs font-medium border-2 border-dashed transition-all hover:opacity-80"
             style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>
             + Çerçeve Ekle
