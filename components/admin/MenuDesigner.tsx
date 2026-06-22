@@ -517,31 +517,25 @@ function Preview({
 
       {/* Sayfa kırılma göstergeleri — printRef dışında, PDF/baskıya girmez */}
       {Array.from({ length: pageCount - 1 }, (_, i) => {
-        const y = (i + 1) * pageH;
+        // Bandı marginMm kadar erken koy → sayfa 1 altında boşluk görünür
+        const margin = s.marginMm * MM;
+        const y = (i + 1) * pageH - margin;
         return (
           <div key={i} style={{ position: "absolute", left: 0, right: 0, top: y, zIndex: 20, pointerEvents: "none" }}>
-            {/* Alt gölge */}
-            <div style={{ height: 14, background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 100%)", marginTop: -14 }} />
-            {/* Sayfa bandı */}
-            <div style={{ background: "#475569", padding: "6px 0 0" }}>
-              {/* Sayfa numarası */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px", marginBottom: 6 }}>
-                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.15)" }} />
-                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: "0.12em" }}>SAYFA {i + 2}</span>
-                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.15)" }} />
-              </div>
-              {/* Sonraki sayfanın header'ı */}
+            {/* Sayfa ayracı + sonraki sayfa header'ı */}
+            <div style={{ background: "#e2e8f0", border: "1px solid #cbd5e1" }}>
               <div style={{
                 backgroundColor: s.bgColor,
-                padding: `${s.marginMm * MM * 0.7}px ${s.marginMm * MM}px ${s.marginMm * MM * 0.5}px`,
+                padding: `${margin * 0.6}px ${margin}px ${margin * 0.4}px`,
                 textAlign: "center",
+                borderBottom: `1px solid rgba(0,0,0,0.06)`,
               }}>
                 {s.logoUrl && (
                   <img src={s.logoUrl} alt="logo"
-                    style={{ maxHeight: 44, maxWidth: 120, margin: "0 auto 4px", display: "block", objectFit: "contain" }} />
+                    style={{ maxHeight: 40, maxWidth: 110, margin: "0 auto 3px", display: "block", objectFit: "contain" }} />
                 )}
                 {s.restoranAdi && (
-                  <div style={{ fontFamily: s.baslikFont + ", serif", fontSize: s.restoranAdiFs * 0.85, fontWeight: 700, color: s.kategoriRenk, letterSpacing: "0.08em" }}>
+                  <div style={{ fontFamily: s.baslikFont + ", serif", fontSize: s.restoranAdiFs * 0.8, fontWeight: 700, color: s.kategoriRenk, letterSpacing: "0.08em" }}>
                     {s.restoranAdi}
                   </div>
                 )}
@@ -550,11 +544,8 @@ function Preview({
                     {s.adres}
                   </div>
                 )}
-                <div style={{ height: 1, backgroundColor: s.kategoriRenk, opacity: 0.15, margin: "6px 0 0" }} />
               </div>
             </div>
-            {/* Üst gölge */}
-            <div style={{ height: 14, background: "linear-gradient(to top, rgba(0,0,0,0.12) 0%, transparent 100%)" }} />
           </div>
         );
       })}
