@@ -495,14 +495,17 @@ function Preview({
   );
 
   return (
-    <div style={{ position: "relative", flexShrink: 0 }}>
-      {/* Tek akış div — PDF/Yazdır kaynağı */}
+    // Outer wrapper clips the hidden print div
+    <div style={{ position: "relative", overflowX: "clip", flexShrink: 0 }}>
+
+      {/* Gizli print div — sol dışarı konumlandırıldı, overflow:clip ile görünmez */}
       <div
         ref={printRef}
-        className="relative"
         style={{
+          position: "absolute",
+          left: -(w * MM * 2 + 200),
+          top: 0,
           width: w * MM,
-          minHeight: pageH,
           backgroundColor: s.bgColor,
           fontFamily: s.urunFont + ", sans-serif",
         }}
@@ -511,28 +514,38 @@ function Preview({
         {renderMenuIcerigi()}
       </div>
 
-      {/* Sayfa kırılma şeritleri — printRef dışında, PDF/baskıya girmez */}
-      {Array.from({ length: pageCount - 1 }, (_, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            top: (i + 1) * pageH,
-            left: 0, right: 0,
-            height: 2,
-            background: "repeating-linear-gradient(to right, #60a5fa 0, #60a5fa 8px, transparent 8px, transparent 14px)",
-            zIndex: 10,
-          }}
-        >
-          <span style={{
-            position: "absolute", right: 0, top: -18,
-            fontSize: 10, color: "#60a5fa", fontWeight: 600, letterSpacing: "0.05em",
-            background: "rgba(0,0,0,0.55)", padding: "2px 6px", borderRadius: 4,
-          }}>
-            Sayfa {i + 2}
-          </span>
-        </div>
-      ))}
+      {/* Görsel sayfa kartları */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingTop: 28 }}>
+        {Array.from({ length: pageCount }, (_, pi) => (
+          <div key={pi} style={{ position: "relative", flexShrink: 0 }}>
+            {pageCount > 1 && (
+              <div style={{
+                position: "absolute", top: -20, right: 0,
+                fontSize: 10, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em",
+              }}>
+                {pi + 1} / {pageCount}
+              </div>
+            )}
+            {/* Her kart tam sayfa yüksekliğinde, overflow:hidden ile kesilir */}
+            <div style={{
+              width: w * MM,
+              height: pageH,
+              overflow: "hidden",
+              position: "relative",
+              backgroundColor: s.bgColor,
+              fontFamily: s.urunFont + ", sans-serif",
+              boxShadow: "0 4px 32px rgba(0,0,0,0.2)",
+            }}>
+              {/* Çerçeve + arka plan — kart sınırlarına göre, kaydırılmaz */}
+              {renderDekorasyon()}
+              {/* İçerik — bu sayfanın dilimine kaydırılmış */}
+              <div style={{ position: "absolute", top: -pi * pageH, left: 0, right: 0 }}>
+                {renderMenuIcerigi()}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
