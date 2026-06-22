@@ -170,6 +170,7 @@ function Preview({
   const pageH = h * MM;
 
   const [contentH, setContentH] = useState(pageH);
+  const [headerH, setHeaderH] = useState(80);
   useEffect(() => {
     const el = printRef.current;
     if (!el) return;
@@ -177,7 +178,14 @@ function Preview({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const pageCount = Math.max(1, Math.ceil(contentH / pageH));
+
+  // Header her sayfada tekrar gösterildiğinden sayfa başına kullanılabilir
+  // içerik yüksekliği pageH - headerH (2. sayfa ve sonrası için)
+  const hasHeader = !!(s.logoUrl || s.restoranAdi);
+  const usableH = hasHeader ? Math.max(pageH - headerH, 100) : pageH;
+  const pageCount = hasHeader
+    ? 1 + Math.max(0, Math.ceil((contentH - pageH) / usableH))
+    : Math.max(1, Math.ceil(contentH / pageH));
 
   const aktifKat = kategoriler.filter(c => !gizliKat.has(c));
   const grouped = aktifKat.reduce<Record<string, MenuItem[]>>((acc, cat) => {
@@ -359,10 +367,37 @@ function Preview({
     </>);
 
   // Sadece menü içeriği — kaydırılarak sayfa kartlarına yansıtılır
+  const renderHeader = (ref?: React.Ref<HTMLDivElement>) => (
+    (s.logoUrl || s.restoranAdi) ? (
+      <div ref={ref} style={{ padding: `${s.marginMm * MM}px ${s.marginMm * MM}px 0`, textAlign: "center" }}>
+        {s.logoUrl && (
+          <img src={s.logoUrl} alt="logo"
+            style={{ maxHeight: 60, maxWidth: 160, margin: "0 auto 8px", display: "block", objectFit: "contain" }} />
+        )}
+        {s.restoranAdi && (
+          <div style={{ fontFamily: s.baslikFont + ", serif", fontSize: s.restoranAdiFs, fontWeight: 700, color: s.kategoriRenk, letterSpacing: "0.08em" }}>
+            {s.restoranAdi}
+          </div>
+        )}
+        {s.altBaslik && (
+          <div style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: 10, color: s.aciklamaRenk, marginTop: 2, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            {s.altBaslik}
+          </div>
+        )}
+        {s.adres && (
+          <div style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: 8, color: s.aciklamaRenk, marginTop: 4 }}>
+            {s.adres}
+          </div>
+        )}
+        <div style={{ height: 1, backgroundColor: s.kategoriRenk, opacity: 0.2, margin: "10px 0" }} />
+      </div>
+    ) : null
+  );
+
   const renderMenuIcerigi = () => (
       <div style={{ position: "relative", padding: s.marginMm * MM }}>
 
-        {/* Başlık */}
+        {/* Başlık (printRef içi için) */}
         {(s.logoUrl || s.restoranAdi) && (
           <div style={{ textAlign: "center", marginBottom: 16 }}>
             {s.logoUrl && (
@@ -494,11 +529,18 @@ function Preview({
       </div>
   );
 
+  // Header yüksekliğini ölçmek için callback ref
+  const headerMeasureRef = (el: HTMLDivElement | null) => {
+    if (el) {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0 && Math.abs(h - headerH) > 2) setHeaderH(h);
+    }
+  };
+
   return (
-    // Outer wrapper clips the hidden print div
     <div style={{ position: "relative", overflowX: "clip", flexShrink: 0 }}>
 
-      {/* Gizli print div — sol dışarı konumlandırıldı, overflow:clip ile görünmez */}
+      {/* Gizli print div — PDF/Yazdır kaynağı, clip ile görünmez */}
       <div
         ref={printRef}
         style={{
@@ -516,35 +558,112 @@ function Preview({
 
       {/* Görsel sayfa kartları */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingTop: 28 }}>
-        {Array.from({ length: pageCount }, (_, pi) => (
-          <div key={pi} style={{ position: "relative", flexShrink: 0 }}>
-            {pageCount > 1 && (
+        {Array.from({ length: pageCount }, (_, pi) => {
+          // Sayfa 1: tüm içerik top=0'dan başlar
+          // Sayfa 2+: static header (yükseklik=headerH) var, kategoriler hemen altında başlar.
+          // Kategorilerin card-y=headerH'te olması için:
+          //   contentTop = headerH - pi * usableH
+          // Bu formülle sayfa 1 kategorisinin bittiği yerden sayfa 2 başlar (süreklilik)
+          const contentTop = pi === 0 ? 0 : headerH - pi * usableH;
+
+          return (
+            <div key={pi} style={{ position: "relative", flexShrink: 0 }}>
+              {pageCount > 1 && (
+                <div style={{
+                  position: "absolute", top: -20, right: 0,
+                  fontSize: 10, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em",
+                }}>
+                  {pi + 1} / {pageCount}
+                </div>
+              )}
               <div style={{
-                position: "absolute", top: -20, right: 0,
-                fontSize: 10, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em",
+                width: w * MM, height: pageH, overflow: "hidden",
+                position: "relative",
+                backgroundColor: s.bgColor,
+                fontFamily: s.urunFont + ", sans-serif",
+                boxShadow: "0 4px 32px rgba(0,0,0,0.2)",
               }}>
-                {pi + 1} / {pageCount}
-              </div>
-            )}
-            {/* Her kart tam sayfa yüksekliğinde, overflow:hidden ile kesilir */}
-            <div style={{
-              width: w * MM,
-              height: pageH,
-              overflow: "hidden",
-              position: "relative",
-              backgroundColor: s.bgColor,
-              fontFamily: s.urunFont + ", sans-serif",
-              boxShadow: "0 4px 32px rgba(0,0,0,0.2)",
-            }}>
-              {/* Çerçeve + arka plan — kart sınırlarına göre, kaydırılmaz */}
-              {renderDekorasyon()}
-              {/* İçerik — bu sayfanın dilimine kaydırılmış */}
-              <div style={{ position: "absolute", top: -pi * pageH, left: 0, right: 0 }}>
-                {renderMenuIcerigi()}
+                {renderDekorasyon()}
+
+                {/* Sayfa 2+: header her sayfada sabit üstte */}
+                {pi > 0 && hasHeader && (
+                  <div style={{ position: "relative", zIndex: 2 }}>
+                    {renderHeader(pi === 1 ? headerMeasureRef : undefined)}
+                  </div>
+                )}
+
+                {/* İçerik — sayfaya göre offset */}
+                <div style={{
+                  position: pi === 0 ? "relative" : "absolute",
+                  top: pi === 0 ? undefined : contentTop,
+                  left: 0, right: 0,
+                  zIndex: 1,
+                }}>
+                  {pi === 0
+                    ? renderMenuIcerigi()          // Sayfa 1: header dahil tam içerik
+                    : <div style={{ padding: `0 ${s.marginMm * MM}px ${s.marginMm * MM}px` }}>
+                        {/* Sayfa 2+: sadece kategoriler, header yukarıda */}
+                        {(() => {
+                          const n = s.kolonSayisi;
+                          const visibleCats = aktifKat.filter(c => (grouped[c] ?? []).length > 0);
+                          const itemCounts = visibleCats.map(c => (grouped[c] ?? []).length);
+                          const total = itemCounts.reduce((a, b) => a + b, 0);
+                          const target = total / n;
+                          const cols: string[][] = Array.from({ length: n }, () => []);
+                          let col = 0, colSum = 0;
+                          visibleCats.forEach((cat, i) => {
+                            cols[col].push(cat);
+                            colSum += itemCounts[i];
+                            if (col < n - 1 && colSum >= target * (col + 1)) col++;
+                          });
+                          return (
+                            <div style={{ display: "flex", gap: s.kolonAraBoşluk * MM, alignItems: "flex-start" }}>
+                              {cols.map((colCats, ci) => (
+                                <div key={ci} style={{ flex: 1, minWidth: 0 }}>
+                                  {colCats.map(cat => {
+                                    const catItems = grouped[cat] ?? [];
+                                    return (
+                                      <div key={cat} style={{ marginBottom: s.kategoriAraBoşluk }}>
+                                        {s.kategoriStil === "kutu" ? (
+                                          <div style={{ backgroundColor: s.kategoriRenk, color: "#fff", fontFamily: s.kategoriFont + ", serif", fontSize: s.kategoriFs, fontWeight: 700, padding: "3px 8px", borderRadius: 4, marginBottom: s.kategoriBaslikAlt, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: s.kategoriHizalama }}>{cat}</div>
+                                        ) : (
+                                          <div style={{ marginBottom: s.kategoriBaslikAlt }}>
+                                            <div style={{ fontFamily: s.kategoriFont + ", serif", fontSize: s.kategoriFs, fontWeight: 700, color: s.kategoriRenk, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: s.kategoriHizalama }}>{cat}</div>
+                                            {s.kategoriStil === "cizgi" && <div style={{ height: 1, backgroundColor: s.kategoriRenk, opacity: 0.3, marginTop: 2 }} />}
+                                          </div>
+                                        )}
+                                        <div style={{ display: "flex", flexDirection: "column", gap: s.urunAraBoşluk }}>
+                                          {catItems.map(item => (
+                                            <div key={item.id} style={{ display: "flex", gap: 6 }}>
+                                              {s.fotografGoster && item.image && <img src={item.image} alt={item.name} style={{ width: s.fotografBoyut, height: s.fotografBoyut, objectFit: "cover", borderRadius: s.fotografRadius, flexShrink: 0 }} />}
+                                              <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, width: "100%" }}>
+                                                  <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.urunFs, fontWeight: 600, color: s.urunRenk, flexShrink: 0, lineHeight: 1.3 }}>{item.name}</span>
+                                                  {s.dolguGoster && s.fiyatHizalama === "sag" && (
+                                                    <span style={{ flex: 1, minWidth: 8, display: "block", marginBottom: "0.25em", ...(s.dolguStil === "cizgi" ? { borderBottom: `0.5px solid ${s.dolguRenk}` } : s.dolguStil === "tire" ? { borderBottom: `1.5px dashed ${s.dolguRenk}` } : s.dolguStil === "kare" ? { backgroundImage: `repeating-linear-gradient(to right, ${s.dolguRenk} 0, ${s.dolguRenk} 2px, transparent 2px, transparent 6px)`, height: "2px", marginBottom: "0.3em" } : { borderBottom: `1.5px dotted ${s.dolguRenk}` }) }} />
+                                                  )}
+                                                  <span style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.fiyatFs, fontWeight: 700, color: s.fiyatRenk, whiteSpace: "nowrap", flexShrink: 0, lineHeight: 1.3 }}>{s.fiyatHizalama === "inline" && " — "}{item.price}</span>
+                                                </div>
+                                                {s.aciklamaGoster && item.desc && <div style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: s.aciklamaFs, color: s.aciklamaRenk, marginTop: 1, lineHeight: 1.3 }}>{item.desc}</div>}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                  }
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
