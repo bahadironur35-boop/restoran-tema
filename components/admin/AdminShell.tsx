@@ -81,7 +81,7 @@ function LiveClock() {
 
 type ShellToast = { id: number; masaNo: number; tip: string };
 
-export default function AdminShell({ children, moduller: initialModuller, plan }: { children: React.ReactNode; moduller: Record<string, string>; plan: Plan }) {
+export default function AdminShell({ children, moduller: initialModuller, plan, isSuperAdmin = false }: { children: React.ReactNode; moduller: Record<string, string>; plan: Plan; isSuperAdmin?: boolean }) {
   const pathname = usePathname();
   const [moduller, setModuller] = useState(initialModuller);
 
@@ -189,12 +189,18 @@ export default function AdminShell({ children, moduller: initialModuller, plan }
         </button>
       </div>
 
-      {/* Plan badge */}
+      {/* Plan / SuperAdmin badge */}
       {!isCollapsed && (
         <div className="px-4 py-2 flex items-center gap-2">
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: PLAN_COLORS[plan] + "22", color: PLAN_COLORS[plan], border: `1px solid ${PLAN_COLORS[plan]}44` }}>
-            {PLAN_LABELS[plan]}
-          </span>
+          {isSuperAdmin ? (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#F59E0B22", color: "#F59E0B", border: "1px solid #F59E0B44" }}>
+              ★ SuperAdmin
+            </span>
+          ) : (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: PLAN_COLORS[plan] + "22", color: PLAN_COLORS[plan], border: `1px solid ${PLAN_COLORS[plan]}44` }}>
+              {PLAN_LABELS[plan]}
+            </span>
+          )}
         </div>
       )}
 
@@ -232,7 +238,7 @@ export default function AdminShell({ children, moduller: initialModuller, plan }
   );
 
   return (
-    <ModullerContext.Provider value={{ moduller, setModul, plan }}>
+    <ModullerContext.Provider value={{ moduller, setModul, plan, isSuperAdmin }}>
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* Desktop sidebar */}

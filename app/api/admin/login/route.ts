@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkPassword, makeSessionValue, SESSION_COOKIE } from "@/lib/auth";
+import { checkPassword, checkSuperAdminPassword, makeSessionValue, SESSION_COOKIE, SUPERADMIN_VALUE } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -25,7 +25,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
   }
 
-  // 2. Legacy tek-şifre fallback (email gönderilmemiş)
+  // 2. Süper admin şifresi
+  if (checkSuperAdminPassword(password)) {
+    const res = NextResponse.json({ success: true, role: "admin" });
+    res.cookies.set(SESSION_COOKIE, SUPERADMIN_VALUE, COOKIE_OPTS);
+    return res;
+  }
+
+  // 3. Legacy tek-şifre fallback
   if (!checkPassword(password)) {
     return NextResponse.json({ error: "Hatalı şifre" }, { status: 401 });
   }

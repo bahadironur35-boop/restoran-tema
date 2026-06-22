@@ -6,12 +6,14 @@ type ModullerContextType = {
   moduller: Record<string, string>;
   setModul: (key: string, value: string) => void;
   plan: Plan;
+  isSuperAdmin: boolean;
 };
 
 export const ModullerContext = createContext<ModullerContextType>({
   moduller: {},
   setModul: () => {},
   plan: "pro",
+  isSuperAdmin: false,
 });
 
 export const useModuller = () => useContext(ModullerContext);

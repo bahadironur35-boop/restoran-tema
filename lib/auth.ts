@@ -3,25 +3,25 @@ import { cookies } from "next/headers";
 export type Role = "admin" | "mudur" | "garson" | "sef";
 
 export interface Session {
-  userId: number | null; // null = env fallback (legacy admin)
+  userId: number | null;
   role: Role;
+  isSuperAdmin?: boolean;
 }
 
 const SESSION_COOKIE = "admin_session";
-// Legacy değer — eski deploy'larla uyumluluk
 const LEGACY_VALUE = "authenticated";
+const SUPERADMIN_VALUE = "superadmin";
 
-export { SESSION_COOKIE };
+export { SESSION_COOKIE, SUPERADMIN_VALUE };
 
 export async function getSession(): Promise<Session | null> {
   const cookieStore = await cookies();
   const val = cookieStore.get(SESSION_COOKIE)?.value;
   if (!val) return null;
 
-  // Legacy tek-şifre session
+  if (val === SUPERADMIN_VALUE) return { userId: null, role: "admin", isSuperAdmin: true };
   if (val === LEGACY_VALUE) return { userId: null, role: "admin" };
 
-  // Yeni format: "userId|role"
   const [idStr, role] = val.split("|");
   const userId = parseInt(idStr, 10);
   if (!userId || !role) return null;
@@ -35,12 +35,17 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function hasRole(...roles: Role[]): Promise<boolean> {
   const session = await getSession();
   if (!session) return false;
+  if (session.isSuperAdmin) return true;
   return roles.includes(session.role);
 }
 
 export function checkPassword(password: string): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
-  return password === adminPassword;
+  return password === (process.env.ADMIN_PASSWORD ?? "admin123");
+}
+
+export function checkSuperAdminPassword(password: string): boolean {
+  const sa = process.env.SUPER_ADMIN_PASSWORD;
+  return !!sa && password === sa;
 }
 
 export function makeSessionValue(userId: number, role: Role): string {
