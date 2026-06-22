@@ -509,7 +509,12 @@ function Preview({
         </div>
       )}
       <div style={{
-        width: w * MM, height: pageH, overflow: "hidden", position: "relative",
+        width: w * MM,
+        // Son sayfa doğal büyür (bottom padding görünür), diğerleri sabit yükseklik
+        ...(pageIdx === pageCount - 1
+          ? { minHeight: pageH }
+          : { height: pageH, overflow: "hidden" }),
+        position: "relative",
         backgroundColor: s.bgColor,
         fontFamily: s.urunFont + ", sans-serif",
         boxShadow: "0 4px 32px rgba(0,0,0,0.22)",
