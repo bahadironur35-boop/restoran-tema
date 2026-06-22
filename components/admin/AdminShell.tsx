@@ -100,9 +100,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       fetch(`/api/admin/ayarlar?t=${Date.now()}`, { cache: "no-store" })
         .then((r) => r.ok ? r.json() : {}).then(setModuller);
     cekModuller();
-    // Ayarlar sayfasında modül aç/kapa yapılınca sidebar'ı refresh'siz güncelle
-    window.addEventListener("moduller-degisti", cekModuller);
-    return () => window.removeEventListener("moduller-degisti", cekModuller);
+    // Ayarlar sayfasında modül aç/kapa yapılınca değeri event'ten al — ağ isteği gerekmez
+    const onModulDegis = (e: Event) => {
+      const detail = (e as CustomEvent<Record<string, string>>).detail;
+      if (detail) setModuller((prev) => ({ ...prev, ...detail }));
+    };
+    window.addEventListener("moduller-degisti", onModulDegis);
+    return () => window.removeEventListener("moduller-degisti", onModulDegis);
   }, []);
 
   // Global garson talebi dinleyici — her sayfada çalışır

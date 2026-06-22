@@ -299,8 +299,10 @@ export default function AyarlarPage() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ ...form, [f.name]: yeniDeger }),
                       });
-                      // Sidebar'ın modülleri anında güncellemesi için sinyal gönder
-                      window.dispatchEvent(new CustomEvent("moduller-degisti"));
+                      // Sidebar'ın modülleri anında güncellemesi için yeni değeri event ile ilet
+                      window.dispatchEvent(new CustomEvent("moduller-degisti", {
+                        detail: { [f.name]: yeniDeger },
+                      }));
                     }}
                     className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200"
                     style={{ backgroundColor: form[f.name] === "true" ? "#1A73E8" : "var(--border)" }}
