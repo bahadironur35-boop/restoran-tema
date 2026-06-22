@@ -53,13 +53,17 @@ type Settings = {
   cerceveler: CerceveSetting[];
 };
 
-type CerceveTip = "tek-cizgi" | "cift-cizgi" | "kose-sule" | "art-deco" | "noktali";
+type KenarStil  = "tek-cizgi" | "cift-cizgi" | "uc-cizgi" | "noktali" | "tire" | "wavy" | "zigzag";
+type KoseEfekt  = "yok" | "rounded" | "bevel" | "fancy" | "floral";
+type KenarDesen = "yok" | "elmas" | "yildiz" | "cicek" | "yaprak" | "klasik";
 
 type CerceveSetting = {
   id: number;
-  tip: CerceveTip;
+  kenarStil: KenarStil;
+  kose: KoseEfekt;
+  desen: KenarDesen;
   renk: string;
-  opacity: number; // 0–1
+  opacity: number;
   kalinlik: number;
   icBoşluk: number; // mm
 };
@@ -187,52 +191,159 @@ function Preview({
         const px = c.kalinlik;
         const W = w * MM, H = h * MM;
         const x = inset, y = inset, rw = W - inset * 2, rh = H - inset * 2;
-        const renk = c.renk;
+        const r = c.renk;
+        const f = (n: number) => +n.toFixed(2);
+        const rx = c.kose === "rounded" ? px * 10 : 0;
+        const bv = px * 14; // bevel cut size
 
-        if (c.tip === "tek-cizgi") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
-            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px} />
-          </svg>
-        );
-        if (c.tip === "cift-cizgi") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
-            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 2.5} />
-            <rect x={x + px * 4} y={y + px * 4} width={rw - px * 8} height={rh - px * 8} fill="none" stroke={renk} strokeWidth={px} />
-          </svg>
-        );
-        if (c.tip === "noktali") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
-            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px} strokeDasharray={`${px * 2} ${px * 3}`} />
-          </svg>
-        );
-        if (c.tip === "art-deco") return (
-          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
-            <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 3} />
-            <rect x={x + px * 5} y={y + px * 5} width={rw - px * 10} height={rh - px * 10} fill="none" stroke={renk} strokeWidth={px * 0.8} />
-            <rect x={x + px * 7} y={y + px * 7} width={rw - px * 14} height={rh - px * 14} fill="none" stroke={renk} strokeWidth={px * 0.8} />
-            {/* Köşe kareler */}
-            {([[x, y],[x+rw,y],[x,y+rh],[x+rw,y+rh]] as [number,number][]).map(([cx,cy],i) => (
-              <rect key={i} x={cx - px * 5} y={cy - px * 5} width={px * 10} height={px * 10} fill={renk} />
+        // Kenar çizgisi path'i (wavy / zigzag için)
+        const sidePath = (ax: number, ay: number, bx: number, by: number) => {
+          const dx = bx - ax, dy = by - ay;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          const ux = dx / len, uy = dy / len;
+          const nx = -uy, ny = ux;
+          const amp = px * 5;
+          if (c.kenarStil === "wavy") {
+            const steps = Math.max(3, Math.round(len / (amp * 6)));
+            let d = `M ${f(ax)} ${f(ay)}`;
+            for (let i = 0; i < steps; i++) {
+              const ex = f(ax + ux * (i + 1) / steps * len), ey = f(ay + uy * (i + 1) / steps * len);
+              const c1x = f(ax + ux * (i / steps + 0.25 / steps) * len + nx * amp);
+              const c1y = f(ay + uy * (i / steps + 0.25 / steps) * len + ny * amp);
+              const c2x = f(ax + ux * (i / steps + 0.75 / steps) * len - nx * amp);
+              const c2y = f(ay + uy * (i / steps + 0.75 / steps) * len - ny * amp);
+              d += ` C ${c1x} ${c1y} ${c2x} ${c2y} ${ex} ${ey}`;
+            }
+            return d;
+          }
+          if (c.kenarStil === "zigzag") {
+            const steps = Math.max(3, Math.round(len / (amp * 3)));
+            let d = `M ${f(ax)} ${f(ay)}`;
+            for (let i = 0; i < steps; i++) {
+              const t1 = (i + 0.5) / steps, t2 = (i + 1) / steps;
+              const dir = i % 2 === 0 ? 1 : -1;
+              d += ` L ${f(ax + ux * t1 * len + nx * amp * dir)} ${f(ay + uy * t1 * len + ny * amp * dir)} L ${f(ax + ux * t2 * len)} ${f(ay + uy * t2 * len)}`;
+            }
+            return d;
+          }
+          return "";
+        };
+
+        // Kenar deseni sembolleri
+        const desenSymbols = (ax: number, ay: number, bx: number, by: number) => {
+          if (c.desen === "yok") return null;
+          const dx = bx - ax, dy = by - ay;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          const sz = px * 4;
+          const spacing = sz * 5;
+          const count = Math.max(1, Math.floor(len / spacing));
+          const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+          return Array.from({ length: count + 1 }, (_, i) => {
+            const t = i / count;
+            const cx = f(ax + dx * t), cy = f(ay + dy * t);
+            const tr = `translate(${cx} ${cy}) rotate(${f(angle)})`;
+            if (c.desen === "elmas") return <polygon key={i} transform={tr} points={`0,${-sz} ${sz},0 0,${sz} ${-sz},0`} fill={r} />;
+            if (c.desen === "yildiz") {
+              const pts = Array.from({ length: 5 }, (_, k) => {
+                const a1 = (k * 72 - 90) * Math.PI / 180, a2 = (k * 72 + 36 - 90) * Math.PI / 180;
+                return `${f(Math.cos(a1) * sz)},${f(Math.sin(a1) * sz)} ${f(Math.cos(a2) * sz * 0.45)},${f(Math.sin(a2) * sz * 0.45)}`;
+              }).join(" ");
+              return <polygon key={i} transform={tr} points={pts} fill={r} />;
+            }
+            if (c.desen === "cicek") return (
+              <g key={i} transform={tr}>
+                {[0, 60, 120, 180, 240, 300].map(a => {
+                  const rad = a * Math.PI / 180;
+                  return <ellipse key={a} cx={f(Math.cos(rad) * sz * 0.6)} cy={f(Math.sin(rad) * sz * 0.6)} rx={f(sz * 0.55)} ry={f(sz * 0.3)} transform={`rotate(${a})`} fill={r} />;
+                })}
+                <circle cx="0" cy="0" r={f(sz * 0.3)} fill={r} />
+              </g>
+            );
+            if (c.desen === "yaprak") return (
+              <g key={i} transform={tr}>
+                <path d={`M 0,${-sz} Q ${sz * 0.8},0 0,${sz} Q ${-sz * 0.8},0 0,${-sz}`} fill={r} />
+                <line x1="0" y1={f(-sz)} x2="0" y2={f(sz)} stroke="white" strokeWidth={f(px * 0.5)} />
+              </g>
+            );
+            if (c.desen === "klasik") return (
+              <g key={i} transform={tr}>
+                <path d={`M 0,${-sz} C ${sz},${-sz * 0.5} ${sz},${sz * 0.5} 0,${sz} C ${-sz},${sz * 0.5} ${-sz},${-sz * 0.5} 0,${-sz}`} fill={r} />
+                <circle cx="0" cy="0" r={f(sz * 0.25)} fill="white" />
+                <line x1={f(-sz)} y1="0" x2={f(sz)} y2="0" stroke="white" strokeWidth={f(px * 0.5)} />
+              </g>
+            );
+            return null;
+          });
+        };
+
+        // Köşe efektleri
+        const koseEfekt = (cx: number, cy: number, idx: number) => {
+          const sz = px * 16;
+          const sx = idx === 1 || idx === 3 ? -1 : 1;
+          const sy = idx === 2 || idx === 3 ? -1 : 1;
+          const tr = `translate(${f(cx)} ${f(cy)})`;
+          if (c.kose === "bevel") return (
+            <line key={idx} x1={f(cx + sx * bv)} y1={f(cy)} x2={f(cx)} y2={f(cy + sy * bv)} stroke={r} strokeWidth={px * 2} strokeLinecap="round" />
+          );
+          if (c.kose === "fancy") return (
+            <path key={idx} transform={tr}
+              d={`M ${f(sx * sz)},0 Q ${f(sx * sz * 0.3)},${f(sy * sz * 0.3)} 0,${f(sy * sz)}
+                  M ${f(sx * sz * 0.55)},0 Q ${f(sx * sz * 0.3)},${f(sy * sz * 0.3)} 0,${f(sy * sz * 0.55)}`}
+              fill="none" stroke={r} strokeWidth={f(px * 1.5)} strokeLinecap="round" />
+          );
+          if (c.kose === "floral") {
+            const pr = sz * 0.38;
+            return (
+              <g key={idx} transform={tr}>
+                <circle cx={f(sx * sz * 0.45)} cy={f(sy * sz * 0.1)} r={f(pr)} fill="none" stroke={r} strokeWidth={px} />
+                <circle cx={f(sx * sz * 0.1)} cy={f(sy * sz * 0.45)} r={f(pr)} fill="none" stroke={r} strokeWidth={px} />
+                <circle cx={f(sx * sz * 0.42)} cy={f(sy * sz * 0.42)} r={f(pr * 0.5)} fill={r} />
+              </g>
+            );
+          }
+          return null;
+        };
+
+        // Bevel için özel border path
+        const bevelPath = `M ${f(x + bv)},${f(y)} L ${f(x + rw - bv)},${f(y)} L ${f(x + rw)},${f(y + bv)} L ${f(x + rw)},${f(y + rh - bv)} L ${f(x + rw - bv)},${f(y + rh)} L ${f(x + bv)},${f(y + rh)} L ${f(x)},${f(y + rh - bv)} L ${f(x)},${f(y + bv)} Z`;
+
+        const sides: [number, number, number, number][] = [
+          [x, y, x + rw, y], [x + rw, y, x + rw, y + rh],
+          [x + rw, y + rh, x, y + rh], [x, y + rh, x, y],
+        ];
+        const corners: [number, number][] = [[x, y], [x + rw, y], [x + rw, y + rh], [x, y + rh]];
+
+        return (
+          <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible", opacity: c.opacity }} width={W} height={H}>
+            {/* Kenar çizgisi */}
+            {c.kenarStil === "tek-cizgi" && (c.kose === "bevel"
+              ? <path d={bevelPath} fill="none" stroke={r} strokeWidth={px} />
+              : <rect x={f(x)} y={f(y)} width={f(rw)} height={f(rh)} fill="none" stroke={r} strokeWidth={px} rx={rx} />
+            )}
+            {c.kenarStil === "cift-cizgi" && <>
+              <rect x={f(x)} y={f(y)} width={f(rw)} height={f(rh)} fill="none" stroke={r} strokeWidth={px * 2.5} rx={rx} />
+              <rect x={f(x + px * 5)} y={f(y + px * 5)} width={f(rw - px * 10)} height={f(rh - px * 10)} fill="none" stroke={r} strokeWidth={px * 0.8} rx={Math.max(0, rx - px * 5)} />
+            </>}
+            {c.kenarStil === "uc-cizgi" && <>
+              <rect x={f(x)} y={f(y)} width={f(rw)} height={f(rh)} fill="none" stroke={r} strokeWidth={px * 3} rx={rx} />
+              <rect x={f(x + px * 6)} y={f(y + px * 6)} width={f(rw - px * 12)} height={f(rh - px * 12)} fill="none" stroke={r} strokeWidth={px * 0.7} rx={Math.max(0, rx - px * 6)} />
+              <rect x={f(x + px * 9)} y={f(y + px * 9)} width={f(rw - px * 18)} height={f(rh - px * 18)} fill="none" stroke={r} strokeWidth={px * 0.7} rx={Math.max(0, rx - px * 9)} />
+            </>}
+            {c.kenarStil === "noktali" && <rect x={f(x)} y={f(y)} width={f(rw)} height={f(rh)} fill="none" stroke={r} strokeWidth={px * 2} strokeDasharray={`${px * 2} ${px * 3}`} rx={rx} />}
+            {c.kenarStil === "tire" && <rect x={f(x)} y={f(y)} width={f(rw)} height={f(rh)} fill="none" stroke={r} strokeWidth={px} strokeDasharray={`${px * 10} ${px * 5}`} rx={rx} />}
+            {(c.kenarStil === "wavy" || c.kenarStil === "zigzag") && sides.map(([ax, ay, bx, by], i) => (
+              <path key={i} d={sidePath(ax, ay, bx, by)} fill="none" stroke={r} strokeWidth={px} strokeLinecap="round" />
+            ))}
+
+            {/* Köşe efektleri */}
+            {c.kose !== "yok" && c.kose !== "rounded" && corners.map(([cx, cy], i) => koseEfekt(cx, cy, i))}
+
+            {/* Kenar deseni */}
+            {c.desen !== "yok" && sides.map(([ax, ay, bx, by], i) => (
+              <g key={i}>{desenSymbols(ax, ay, bx, by)}</g>
             ))}
           </svg>
         );
-        if (c.tip === "kose-sule") {
-          const cs = px * 18; // köşe süsü boyutu
-          const path = (tx: number, ty: number, sx: number, sy: number) =>
-            `M${tx} ${ty + sy * cs * 0.3} Q${tx} ${ty} ${tx + sx * cs * 0.3} ${ty}
-             M${tx + sx * cs * 0.5} ${ty} L${tx + sx * cs * 0.8} ${ty} M${tx} ${ty + sy * cs * 0.5} L${tx} ${ty + sy * cs * 0.8}
-             M${tx + sx * cs * 0.15} ${ty + sy * cs * 0.15} Q${tx + sx * cs * 0.35} ${ty} ${tx + sx * cs * 0.5} ${ty + sy * cs * 0.15}
-             Q${tx + sx * cs * 0.35} ${ty + sy * cs * 0.35} ${tx + sx * cs * 0.15} ${ty + sy * cs * 0.15}`;
-          return (
-            <svg key={c.id} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: c.opacity }} width={W} height={H}>
-              <rect x={x} y={y} width={rw} height={rh} fill="none" stroke={renk} strokeWidth={px * 0.8} />
-              {([[x,y,1,1],[x+rw,y,-1,1],[x,y+rh,1,-1],[x+rw,y+rh,-1,-1]] as [number,number,number,number][]).map(([tx,ty,sx,sy],i) => (
-                <path key={i} d={path(tx,ty,sx,sy)} fill="none" stroke={renk} strokeWidth={px * 1.5} strokeLinecap="round" />
-              ))}
-            </svg>
-          );
-        }
-        return null;
       })}
 
       {/* İçerik */}
@@ -887,31 +998,89 @@ export default function MenuDesigner({
                   Kaldır
                 </button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
+                {/* Kenar Stili */}
                 <div>
-                  <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Stil</p>
-                  <div className="grid grid-cols-3 gap-1">
+                  <p className="text-xs mb-1 font-medium" style={{ color: "var(--text-muted)" }}>Kenar Stili</p>
+                  <div className="grid grid-cols-4 gap-1">
                     {([
-                      { key: "tek-cizgi",  label: "Tek Çizgi" },
-                      { key: "cift-cizgi", label: "Çift Çizgi" },
-                      { key: "noktali",    label: "Noktalı" },
-                      { key: "art-deco",   label: "Art Deco" },
-                      { key: "kose-sule",  label: "Köşe Süsü" },
+                      { key: "tek-cizgi",  label: "─────" },
+                      { key: "cift-cizgi", label: "══════" },
+                      { key: "uc-cizgi",   label: "≡≡≡≡≡" },
+                      { key: "noktali",    label: "••••••" },
+                      { key: "tire",       label: "– – –" },
+                      { key: "wavy",       label: "∿∿∿∿" },
+                      { key: "zigzag",     label: "⋀⋀⋀⋀" },
                     ] as const).map(({ key, label }) => (
                       <button key={key}
-                        onClick={() => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, tip: key } : x))}
-                        className="py-1 rounded text-center border text-xs transition-all"
+                        onClick={() => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, kenarStil: key } : x))}
+                        className="py-1.5 rounded text-center border text-xs transition-all"
+                        title={key}
                         style={{
-                          borderColor: c.tip === key ? "var(--gold)" : "var(--border)",
-                          backgroundColor: c.tip === key ? "var(--gold)" : "transparent",
-                          color: c.tip === key ? "#fff" : "var(--text-muted)",
+                          borderColor: c.kenarStil === key ? "var(--gold)" : "var(--border)",
+                          backgroundColor: c.kenarStil === key ? "var(--gold)" : "transparent",
+                          color: c.kenarStil === key ? "#fff" : "var(--text-muted)",
+                          letterSpacing: "-0.05em",
                         }}>
                         {label}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="flex gap-2 items-center">
+
+                {/* Köşe Efekti */}
+                <div>
+                  <p className="text-xs mb-1 font-medium" style={{ color: "var(--text-muted)" }}>Köşe Efekti</p>
+                  <div className="grid grid-cols-5 gap-1">
+                    {([
+                      { key: "yok",     label: "Yok" },
+                      { key: "rounded", label: "Yuvarlak" },
+                      { key: "bevel",   label: "Bevel" },
+                      { key: "fancy",   label: "Fancy" },
+                      { key: "floral",  label: "Çiçek" },
+                    ] as const).map(({ key, label }) => (
+                      <button key={key}
+                        onClick={() => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, kose: key } : x))}
+                        className="py-1 rounded text-center border text-xs transition-all"
+                        style={{
+                          borderColor: c.kose === key ? "var(--gold)" : "var(--border)",
+                          backgroundColor: c.kose === key ? "var(--gold)" : "transparent",
+                          color: c.kose === key ? "#fff" : "var(--text-muted)",
+                        }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Kenar Deseni */}
+                <div>
+                  <p className="text-xs mb-1 font-medium" style={{ color: "var(--text-muted)" }}>Kenar Deseni</p>
+                  <div className="grid grid-cols-3 gap-1">
+                    {([
+                      { key: "yok",    label: "Yok" },
+                      { key: "elmas",  label: "◆ Elmas" },
+                      { key: "yildiz", label: "★ Yıldız" },
+                      { key: "cicek",  label: "✿ Çiçek" },
+                      { key: "yaprak", label: "❧ Yaprak" },
+                      { key: "klasik", label: "◉ Klasik" },
+                    ] as const).map(({ key, label }) => (
+                      <button key={key}
+                        onClick={() => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, desen: key } : x))}
+                        className="py-1 rounded text-center border text-xs transition-all"
+                        style={{
+                          borderColor: c.desen === key ? "var(--gold)" : "var(--border)",
+                          backgroundColor: c.desen === key ? "var(--gold)" : "transparent",
+                          color: c.desen === key ? "#fff" : "var(--text-muted)",
+                        }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Renk + Opaklık */}
+                <div className="flex gap-2">
                   <div className="flex-1">
                     <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Renk</p>
                     <div className="flex gap-1.5 items-center">
@@ -924,35 +1093,33 @@ export default function MenuDesigner({
                     </div>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Opaklık — {Math.round(c.opacity * 100)}%</p>
+                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Opaklık {Math.round(c.opacity * 100)}%</p>
                     <input type="range" min={0.05} max={1} step={0.05} value={c.opacity}
                       onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, opacity: +e.target.value } : x))}
+                      className="w-full mt-1" />
+                  </div>
+                </div>
+
+                {/* Kalınlık + İç Boşluk */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Kalınlık {c.kalinlik}px</p>
+                    <input type="range" min={0.5} max={6} step={0.5} value={c.kalinlik}
+                      onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, kalinlik: +e.target.value } : x))}
                       className="w-full" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Kalınlık</p>
-                    <div className="flex items-center gap-1">
-                      <input type="range" min={0.5} max={4} step={0.5} value={c.kalinlik}
-                        onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, kalinlik: +e.target.value } : x))}
-                        className="flex-1" />
-                      <span className="text-xs w-6" style={{ color: "var(--text-muted)" }}>{c.kalinlik}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>İç Boşluk (mm)</p>
-                  <div className="flex items-center gap-1">
+                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>İç Boşluk {c.icBoşluk}mm</p>
                     <input type="range" min={2} max={20} step={1} value={c.icBoşluk}
                       onChange={e => set("cerceveler", s.cerceveler.map(x => x.id === c.id ? { ...x, icBoşluk: +e.target.value } : x))}
-                      className="flex-1" />
-                    <span className="text-xs w-8" style={{ color: "var(--text-muted)" }}>{c.icBoşluk}mm</span>
+                      className="w-full" />
                   </div>
                 </div>
               </div>
             </div>
           ))}
           <button
-            onClick={() => set("cerceveler", [...s.cerceveler, { id: Date.now(), tip: "tek-cizgi", renk: "#1a1a1a", opacity: 1, kalinlik: 1, icBoşluk: 6 }])}
+            onClick={() => set("cerceveler", [...s.cerceveler, { id: Date.now(), kenarStil: "tek-cizgi" as KenarStil, kose: "yok" as KoseEfekt, desen: "yok" as KenarDesen, renk: "#1a1a1a", opacity: 1, kalinlik: 1, icBoşluk: 6 }])}
             className="w-full py-2 rounded-xl text-xs font-medium border-2 border-dashed transition-all hover:opacity-80"
             style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>
             + Çerçeve Ekle
