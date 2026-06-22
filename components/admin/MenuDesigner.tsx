@@ -497,10 +497,18 @@ function Preview({
       </div>
   );
 
-  const GAP = 28; // sayfalar arası piksel boşluk
-
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
+
+      {/* Sayfa sayısı badge — sol üst köşe, debug */}
+      {pageCount > 1 && (
+        <div style={{
+          position: "absolute", top: -22, right: 0, zIndex: 30,
+          fontSize: 10, color: "#64748b", whiteSpace: "nowrap",
+        }}>
+          {pageCount} sayfa · {Math.round(contentH)}px
+        </div>
+      )}
 
       {/* printRef: tek akış div — PDF/Yazdır kaynağı */}
       <div
@@ -520,13 +528,19 @@ function Preview({
       {Array.from({ length: pageCount - 1 }, (_, i) => (
         <div key={i} style={{
           position: "absolute",
-          left: -8, right: -8,
-          top: (i + 1) * pageH - 1,
-          height: 2,
-          background: "#94a3b8",
+          left: -16, right: -16,
+          top: (i + 1) * pageH,
+          height: 6,
+          background: "#475569",
           zIndex: 20,
           pointerEvents: "none",
-        }} />
+          display: "flex", alignItems: "center", justifyContent: "flex-end",
+          paddingRight: 4,
+        }}>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.08em" }}>
+            {i + 2}. SAYFA
+          </span>
+        </div>
       ))}
     </div>
   );
