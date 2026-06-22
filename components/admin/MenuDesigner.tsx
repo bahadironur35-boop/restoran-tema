@@ -176,9 +176,9 @@ function Preview({
 
   return (
     <div ref={printRef}
-      className="relative overflow-hidden"
+      className="relative"
       style={{
-        width: w * MM, height: h * MM,
+        width: w * MM, minHeight: h * MM,
         backgroundColor: s.bgColor,
         fontFamily: s.urunFont + ", sans-serif",
         flexShrink: 0,
@@ -355,7 +355,7 @@ function Preview({
       })}
 
       {/* İçerik */}
-      <div style={{ position: "relative", padding: s.marginMm * MM, paddingBottom: s.marginMm * MM * 1.5 }}>
+      <div style={{ position: "relative", padding: s.marginMm * MM }}>
 
         {/* Başlık */}
         {(s.logoUrl || s.restoranAdi) && (
