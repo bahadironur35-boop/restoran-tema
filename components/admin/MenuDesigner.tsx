@@ -410,7 +410,10 @@ export default function MenuDesigner({
   const w = s.yon === "dikey" ? size.w : size.h;
   const h = s.yon === "dikey" ? size.h : size.w;
   const MM = 3.7795;
-  const SCALE = Math.min(680 / (w * MM), 820 / (h * MM), 1);
+  // Panel 380px + padding 24px → kalan alan
+  const availW = typeof window !== "undefined" ? window.innerWidth - 380 - 24 : 900;
+  const availH = typeof window !== "undefined" ? window.innerHeight - 24 : 820;
+  const SCALE = Math.min(availW / (w * MM), availH / (h * MM), 1);
 
   return (
     <>
