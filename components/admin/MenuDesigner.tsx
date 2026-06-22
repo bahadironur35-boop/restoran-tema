@@ -94,6 +94,26 @@ const DEFAULT: Settings = {
 };
 
 // ── Ayar paneli bölümleri ──────────────────────────────
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!value)}
+      className="relative inline-flex items-center shrink-0 transition-all duration-200"
+      style={{ width: 36, height: 20, borderRadius: 10, backgroundColor: value ? "var(--gold)" : "var(--border)" }}
+    >
+      <span
+        className="inline-block transition-all duration-200"
+        style={{
+          width: 14, height: 14, borderRadius: "50%", backgroundColor: "#fff",
+          transform: value ? "translateX(18px)" : "translateX(3px)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+        }}
+      />
+    </button>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
@@ -757,19 +777,7 @@ export default function MenuDesigner({
             </select>
           </Row>
           <Row label="Fotoğraflar">
-            <div className="flex gap-2">
-              {([false, true] as const).map(v => (
-                <button key={String(v)} onClick={() => set("fotografGoster", v)}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all"
-                  style={{
-                    borderColor: s.fotografGoster === v ? "var(--gold)" : "var(--border)",
-                    backgroundColor: s.fotografGoster === v ? "var(--gold)" : "transparent",
-                    color: s.fotografGoster === v ? "#fff" : "var(--text)",
-                  }}>
-                  {v ? "Fotoğraflı" : "Fotoğrafsız"}
-                </button>
-              ))}
-            </div>
+            <Toggle value={s.fotografGoster} onChange={v => set("fotografGoster", v)} />
           </Row>
           {s.fotografGoster && (
             <Row label="Fotoğraf Boyutu">
@@ -781,34 +789,10 @@ export default function MenuDesigner({
             </Row>
           )}
           <Row label="Açıklama">
-            <div className="flex gap-2">
-              {([true, false] as const).map(v => (
-                <button key={String(v)} onClick={() => set("aciklamaGoster", v)}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all"
-                  style={{
-                    borderColor: s.aciklamaGoster === v ? "var(--gold)" : "var(--border)",
-                    backgroundColor: s.aciklamaGoster === v ? "var(--gold)" : "transparent",
-                    color: s.aciklamaGoster === v ? "#fff" : "var(--text)",
-                  }}>
-                  {v ? "Göster" : "Gizle"}
-                </button>
-              ))}
-            </div>
+            <Toggle value={s.aciklamaGoster} onChange={v => set("aciklamaGoster", v)} />
           </Row>
           <Row label="Ad–Fiyat Dolgusu">
-            <div className="flex gap-2">
-              {([true, false] as const).map(v => (
-                <button key={String(v)} onClick={() => set("dolguGoster", v)}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all"
-                  style={{
-                    borderColor: s.dolguGoster === v ? "var(--gold)" : "var(--border)",
-                    backgroundColor: s.dolguGoster === v ? "var(--gold)" : "transparent",
-                    color: s.dolguGoster === v ? "#fff" : "var(--text)",
-                  }}>
-                  {v ? "Göster" : "Gizle"}
-                </button>
-              ))}
-            </div>
+            <Toggle value={s.dolguGoster} onChange={v => set("dolguGoster", v)} />
           </Row>
           {s.dolguGoster && (
             <>
