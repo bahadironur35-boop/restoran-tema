@@ -21,7 +21,7 @@ export default function AdminLogin() {
       body: JSON.stringify({ email: email || undefined, password }),
     });
     if (res.ok) {
-      router.push("/admin");
+      window.location.href = "/admin";
     } else {
       const data = await res.json();
       setError(data.error || "Giriş başarısız.");

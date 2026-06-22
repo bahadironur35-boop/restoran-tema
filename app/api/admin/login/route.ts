@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkPassword, checkSuperAdminPassword, makeSessionValue, SESSION_COOKIE, SUPERADMIN_VALUE } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { checkPassword, SESSION_COOKIE, SUPERADMIN_VALUE } from "@/lib/auth";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -14,30 +12,21 @@ const COOKIE_OPTS = {
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
 
-  // 1. DB kullanıcısı dene (email varsa)
-  if (email) {
-    const user = await prisma.kullanici.findUnique({ where: { email } });
-    if (user && user.active && await bcrypt.compare(password, user.password)) {
-      const cookieVal = user.isSuperAdmin ? SUPERADMIN_VALUE : makeSessionValue(user.id, user.role as import("@/lib/auth").Role);
-      const res = NextResponse.json({ success: true, role: user.isSuperAdmin ? "admin" : user.role });
-      res.cookies.set(SESSION_COOKIE, cookieVal, COOKIE_OPTS);
-      return res;
-    }
-    return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
-  }
-
-  // 2. Süper admin şifresi
-  if (checkSuperAdminPassword(password)) {
-    const res = NextResponse.json({ success: true, role: "admin" });
+  // SuperAdmin: email + şifre ile direkt env var kontrolü
+  const saEmail = process.env.SUPER_ADMIN_EMAIL ?? "bahadironur35@gmail.com";
+  const saPw = process.env.SUPER_ADMIN_PW ?? process.env.SUPER_ADMIN_PASSWORD;
+  if (email && email === saEmail && saPw && password === saPw) {
+    const res = NextResponse.json({ success: true, role: "superadmin" });
     res.cookies.set(SESSION_COOKIE, SUPERADMIN_VALUE, COOKIE_OPTS);
     return res;
   }
 
-  // 3. Legacy tek-şifre fallback
-  if (!checkPassword(password)) {
-    return NextResponse.json({ error: "Hatalı şifre" }, { status: 401 });
+  // Normal admin şifresi (email boş)
+  if (!email && checkPassword(password)) {
+    const res = NextResponse.json({ success: true, role: "admin" });
+    res.cookies.set(SESSION_COOKIE, "authenticated", COOKIE_OPTS);
+    return res;
   }
-  const res = NextResponse.json({ success: true, role: "admin" });
-  res.cookies.set(SESSION_COOKIE, "authenticated", COOKIE_OPTS);
-  return res;
+
+  return NextResponse.json({ error: "Hatalı giriş bilgileri" }, { status: 401 });
 }
