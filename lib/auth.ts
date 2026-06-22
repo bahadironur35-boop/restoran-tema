@@ -44,7 +44,7 @@ export function checkPassword(password: string): boolean {
 }
 
 export function checkSuperAdminPassword(password: string): boolean {
-  const sa = process.env.SUPER_ADMIN_PASSWORD;
+  const sa = process.env.SUPER_ADMIN_PW ?? process.env.SUPER_ADMIN_PASSWORD;
   return !!sa && password === sa;
 }
 
