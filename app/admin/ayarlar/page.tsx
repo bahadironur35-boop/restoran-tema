@@ -181,6 +181,15 @@ const FIELDS = [
   ]},
 ];
 
+// Varsayılan KAPALI switch'ler — tüketici kodu bunları yalnızca "true" ise aktif sayar.
+// Listelenmeyen tüm switch'ler varsayılan AÇIK kabul edilir.
+const DEFAULT_OFF_SWITCHES = new Set([
+  "musteriSiparisHazirBildirimi",
+  "sadakatAktif",
+  "sadakatDamgaAktif",
+  "onlineOdemeAktif",
+]);
+
 export default function AyarlarPage() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
@@ -196,7 +205,13 @@ export default function AyarlarPage() {
       .then((data) => {
         const defaults: Record<string, string> = {};
         for (const s of FIELDS) for (const f of s.items) defaults[f.name] = f.default;
-        setForm({ ...defaults, ...data });
+        // Switch varsayılanları — tüketici kodu çoğu modülü "false" değilse açık sayar.
+        // Bu yüzden toggle'lar da değer kaydedilmemişse açık görünmeli (sidebar ile tutarlı).
+        const switchDefaults: Record<string, string> = {};
+        for (const sec of SWITCH_SECTIONS)
+          for (const f of sec.fields)
+            switchDefaults[f.name] = DEFAULT_OFF_SWITCHES.has(f.name) ? "false" : "true";
+        setForm({ ...switchDefaults, ...defaults, ...data });
         setLoading(false);
       });
   }, []);
