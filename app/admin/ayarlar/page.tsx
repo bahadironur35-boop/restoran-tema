@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useModuller } from "@/contexts/ModullerContext";
+import { isModulAvailable, PLAN_LABELS, PLAN_COLORS } from "@/lib/plan";
+import { Lock } from "lucide-react";
 
 const SWITCH_SECTIONS = [
   {
@@ -194,7 +196,7 @@ const DEFAULT_OFF_SWITCHES = new Set([
 
 export default function AyarlarPage() {
   const router = useRouter();
-  const { setModul } = useModuller();
+  const { setModul, plan } = useModuller();
   const [form, setForm] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -283,39 +285,53 @@ export default function AyarlarPage() {
               {sec.section}
             </h2>
             <div className="space-y-1">
-              {sec.fields.map((f, i) => (
+              {sec.fields.map((f, i) => {
+                const kilitli = !!f.name.endsWith("Aktif") && !isModulAvailable(f.name, plan);
+                return (
                 <div key={f.name}
                   className={`flex items-center justify-between gap-4 py-3 ${i < sec.fields.length - 1 ? "border-b" : ""}`}
-                  style={{ borderColor: "var(--border)" }}>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>{f.label}</p>
+                  style={{ borderColor: "var(--border)", opacity: kilitli ? 0.5 : 1 }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium" style={{ color: "var(--text)" }}>{f.label}</p>
+                      {kilitli && (
+                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: PLAN_COLORS[plan] + "22", color: PLAN_COLORS[plan], border: `1px solid ${PLAN_COLORS[plan]}44` }}>
+                          <Lock size={9} />
+                          {PLAN_LABELS[plan] === "Lite" ? "Pro" : "Premium"}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{f.desc}</p>
                   </div>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={form[f.name] === "true"}
+                    disabled={kilitli}
                     onClick={async () => {
+                      if (kilitli) return;
                       const yeniDeger = form[f.name] === "true" ? "false" : "true";
                       setForm((p) => ({ ...p, [f.name]: yeniDeger }));
-                      setModul(f.name, yeniDeger); // sidebar optimistic update
+                      setModul(f.name, yeniDeger);
                       await fetch("/api/admin/ayarlar", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ ...form, [f.name]: yeniDeger }),
                       });
-                      router.refresh(); // layout server component'i DB'den senkronize et
+                      router.refresh();
                     }}
                     className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200"
-                    style={{ backgroundColor: form[f.name] === "true" ? "#1A73E8" : "var(--border)" }}
+                    style={{ backgroundColor: kilitli ? "var(--border)" : form[f.name] === "true" ? "#1A73E8" : "var(--border)", cursor: kilitli ? "not-allowed" : "pointer" }}
                   >
                     <span
                       className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
-                      style={{ transform: form[f.name] === "true" ? "translateX(20px)" : "translateX(0)" }}
+                      style={{ transform: !kilitli && form[f.name] === "true" ? "translateX(20px)" : "translateX(0)" }}
                     />
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         ))}

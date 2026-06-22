@@ -11,6 +11,7 @@ import {
 import { useEffect } from "react";
 import CalendarDropdown from "./CalendarDropdown";
 import { ModullerContext } from "@/contexts/ModullerContext";
+import { type Plan, PLAN_LABELS, PLAN_COLORS, isModulAvailable } from "@/lib/plan";
 
 type Role = "admin" | "mudur" | "garson" | "sef";
 
@@ -80,7 +81,7 @@ function LiveClock() {
 
 type ShellToast = { id: number; masaNo: number; tip: string };
 
-export default function AdminShell({ children, moduller: initialModuller }: { children: React.ReactNode; moduller: Record<string, string> }) {
+export default function AdminShell({ children, moduller: initialModuller, plan }: { children: React.ReactNode; moduller: Record<string, string>; plan: Plan }) {
   const pathname = usePathname();
   const [moduller, setModuller] = useState(initialModuller);
 
@@ -188,11 +189,20 @@ export default function AdminShell({ children, moduller: initialModuller }: { ch
         </button>
       </div>
 
+      {/* Plan badge */}
+      {!isCollapsed && (
+        <div className="px-4 py-2 flex items-center gap-2">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: PLAN_COLORS[plan] + "22", color: PLAN_COLORS[plan], border: `1px solid ${PLAN_COLORS[plan]}44` }}>
+            {PLAN_LABELS[plan]}
+          </span>
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="flex-1 pt-3 space-y-0.5 overflow-y-auto pb-4" style={{ padding: isCollapsed ? "12px 8px 16px" : "12px 8px 16px" }}>
         {navItems
           .filter((item) => !me || item.roles.includes(me.role as Role))
-          .filter((item) => !item.modul || moduller[item.modul] !== "false")
+          .filter((item) => !item.modul || (moduller[item.modul] !== "false" && isModulAvailable(item.modul, plan)))
           .map((item) => {
             const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -222,7 +232,7 @@ export default function AdminShell({ children, moduller: initialModuller }: { ch
   );
 
   return (
-    <ModullerContext.Provider value={{ moduller, setModul }}>
+    <ModullerContext.Provider value={{ moduller, setModul, plan }}>
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* Desktop sidebar */}
