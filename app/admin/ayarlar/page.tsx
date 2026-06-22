@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useModuller } from "@/contexts/ModullerContext";
-import { isModulAvailable, PLAN_LABELS, PLAN_COLORS } from "@/lib/plan";
+import { isModulAvailable, PLAN_GATED_FIELDS, PLAN_LABELS, PLAN_COLORS, PLAN_FEATURES, requiredPlan } from "@/lib/plan";
 import { Lock } from "lucide-react";
 
 const SWITCH_SECTIONS = [
@@ -286,7 +286,8 @@ export default function AyarlarPage() {
             </h2>
             <div className="space-y-1">
               {sec.fields.map((f, i) => {
-                const kilitli = !!f.name.endsWith("Aktif") && !isModulAvailable(f.name, plan);
+                const kilitli = PLAN_GATED_FIELDS.has(f.name) && !isModulAvailable(f.name, plan);
+                const gerekliPlan = kilitli ? requiredPlan(f.name) : null;
                 return (
                 <div key={f.name}
                   className={`flex items-center justify-between gap-4 py-3 ${i < sec.fields.length - 1 ? "border-b" : ""}`}
@@ -294,11 +295,11 @@ export default function AyarlarPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium" style={{ color: "var(--text)" }}>{f.label}</p>
-                      {kilitli && (
+                      {kilitli && gerekliPlan && (
                         <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: PLAN_COLORS[plan] + "22", color: PLAN_COLORS[plan], border: `1px solid ${PLAN_COLORS[plan]}44` }}>
+                          style={{ backgroundColor: PLAN_COLORS[gerekliPlan] + "22", color: PLAN_COLORS[gerekliPlan], border: `1px solid ${PLAN_COLORS[gerekliPlan]}44` }}>
                           <Lock size={9} />
-                          {PLAN_LABELS[plan] === "Lite" ? "Pro" : "Premium"}
+                          {PLAN_LABELS[gerekliPlan]}
                         </span>
                       )}
                     </div>
@@ -335,6 +336,49 @@ export default function AyarlarPage() {
             </div>
           </section>
         ))}
+      </div>
+
+      {/* Plan Karşılaştırma */}
+      <div className="mt-8">
+        <section className="card p-6">
+          <h2 className="uppercase tracking-wider text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Plan Karşılaştırma</h2>
+          <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
+            Aktif plan: <span className="font-semibold" style={{ color: PLAN_COLORS[plan] }}>{PLAN_LABELS[plan]}</span>
+            {" — "}Plan değiştirmek için Vercel'de <code className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}>PLAN</code> ortam değişkenini güncelle.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left pb-3 font-medium" style={{ color: "var(--text-muted)" }}>Özellik</th>
+                  {(["lite", "pro", "premium"] as const).map((p) => (
+                    <th key={p} className="text-center pb-3 px-4">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold"
+                        style={{ backgroundColor: PLAN_COLORS[p] + (plan === p ? "33" : "11"), color: PLAN_COLORS[p], border: `1px solid ${PLAN_COLORS[p]}${plan === p ? "66" : "33"}` }}>
+                        {PLAN_LABELS[p]}{plan === p ? " ✓" : ""}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {PLAN_FEATURES.map((f, i) => (
+                  <tr key={i} className={i % 2 === 0 ? "" : ""} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td className="py-2.5 text-sm" style={{ color: "var(--text)" }}>{f.label}</td>
+                    {(["lite", "pro", "premium"] as const).map((p) => (
+                      <td key={p} className="py-2.5 text-center">
+                        {f[p]
+                          ? <span style={{ color: "#22C55E" }}>✓</span>
+                          : <span style={{ color: "var(--border)" }}>—</span>
+                        }
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       {/* Rezervasyon Widget Embed Kodu */}
