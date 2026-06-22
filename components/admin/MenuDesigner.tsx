@@ -492,30 +492,21 @@ function Preview({
             </div>
           );
         })()}
-        {/* Alt boşluk garantisi */}
-        <div style={{ height: s.marginMm * MM }} />
       </div>
   );
+
+  const margin = s.marginMm * MM;
 
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
 
-      {/* Sayfa sayısı badge — sol üst köşe, debug */}
-      {pageCount > 1 && (
-        <div style={{
-          position: "absolute", top: -22, right: 0, zIndex: 30,
-          fontSize: 10, color: "#64748b", whiteSpace: "nowrap",
-        }}>
-          {pageCount} sayfa · {Math.round(contentH)}px
-        </div>
-      )}
-
-      {/* printRef: tek akış div — PDF/Yazdır kaynağı */}
+      {/* printRef: tam sayfa yükseklikleri, PDF/Yazdır kaynağı */}
       <div
         ref={printRef}
         className="relative"
         style={{
           width: w * MM,
+          minHeight: pageCount * pageH,
           backgroundColor: s.bgColor,
           fontFamily: s.urunFont + ", sans-serif",
         }}
@@ -524,24 +515,56 @@ function Preview({
         {renderMenuIcerigi()}
       </div>
 
-      {/* Sayfa kırılma göstergeleri — printRef dışında, PDF/baskıya girmez */}
-      {Array.from({ length: pageCount - 1 }, (_, i) => (
-        <div key={i} style={{
-          position: "absolute",
-          left: -16, right: -16,
-          top: (i + 1) * pageH,
-          height: 6,
-          background: "#475569",
-          zIndex: 20,
-          pointerEvents: "none",
-          display: "flex", alignItems: "center", justifyContent: "flex-end",
-          paddingRight: 4,
-        }}>
-          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.08em" }}>
-            {i + 2}. SAYFA
-          </span>
-        </div>
-      ))}
+      {/* Sayfa sınırı overlayları — printRef dışında, PDF/baskıya girmez */}
+      {Array.from({ length: pageCount - 1 }, (_, i) => {
+        const breakY = (i + 1) * pageH;
+        return (
+          <div key={i}>
+            {/* Alt boşluk maskesi — sayfa 1 alt marjını gösterir */}
+            <div style={{
+              position: "absolute", left: 0, right: 0,
+              top: breakY - margin, height: margin,
+              backgroundColor: s.bgColor, zIndex: 10, pointerEvents: "none",
+            }} />
+
+            {/* Ayraç çizgisi */}
+            <div style={{
+              position: "absolute", left: -16, right: -16,
+              top: breakY, height: 4,
+              background: "#475569", zIndex: 20, pointerEvents: "none",
+            }} />
+
+            {/* Sayfa 2+ logosu */}
+            {(s.logoUrl || s.restoranAdi) && (
+              <div style={{
+                position: "absolute", left: 0, right: 0,
+                top: breakY + 4,
+                backgroundColor: s.bgColor,
+                padding: `${margin * 0.5}px ${margin}px ${margin * 0.4}px`,
+                textAlign: "center",
+                borderBottom: `1px solid rgba(0,0,0,0.08)`,
+                zIndex: 10, pointerEvents: "none",
+              }}>
+                {s.logoUrl && (
+                  <img src={s.logoUrl} alt="logo"
+                    style={{ maxHeight: 44, maxWidth: 120, margin: "0 auto 4px", display: "block", objectFit: "contain" }} />
+                )}
+                {s.restoranAdi && (
+                  <div style={{ fontFamily: s.baslikFont + ", serif", fontSize: s.restoranAdiFs * 0.82, fontWeight: 700, color: s.kategoriRenk, letterSpacing: "0.08em" }}>
+                    {s.restoranAdi}
+                  </div>
+                )}
+                {s.adres && (
+                  <div style={{ fontFamily: s.urunFont + ", sans-serif", fontSize: 7, color: s.aciklamaRenk, marginTop: 2 }}>
+                    {s.adres}
+                  </div>
+                )}
+                <div style={{ height: 1, backgroundColor: s.kategoriRenk, opacity: 0.15, marginTop: 6 }} />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
