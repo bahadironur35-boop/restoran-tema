@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
@@ -93,9 +93,9 @@ const BOLUMLER: Bolum[] = [
         baslik: "Ortam değişkenlerini doğrula",
         sure: "2 dk",
         zorunlu: true,
-        aciklama: "/admin/login sayfasına gir, şifre ile giriş yap ve dashboard'un açıldığını doğrula.",
+        aciklama: "/login sayfasına gir, şifre ile giriş yap ve dashboard'un açıldığını doğrula.",
         adimlar: [
-          "deploy-url.vercel.app/admin/login adresine git",
+          "deploy-url.vercel.app/login adresine git",
           "Belirlediğin şifre ile giriş yap",
           "Dashboard açılıyorsa her şey doğru",
           "Açılmıyorsa Vercel → Settings → Environment Variables'ı kontrol et",

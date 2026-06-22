@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { isAuthenticated } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -12,7 +12,7 @@ function parsePrice(p: string): number {
 }
 
 export default async function AdminDashboard() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await isAuthenticated())) redirect("/login");
 
   const bugun = new Date().toISOString().split("T")[0]; // "2026-06-19"
 

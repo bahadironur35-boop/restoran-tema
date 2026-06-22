@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { isAuthenticated } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import RezervasyonTable from "@/components/admin/RezervasyonTable";
 
 export default async function RezervasyonlarPage() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await isAuthenticated())) redirect("/login");
 
   const rezervasyonAyar = await prisma.ayar.findUnique({ where: { key: "rezervasyonAktif" } });
   if (rezervasyonAyar?.value === "false") {

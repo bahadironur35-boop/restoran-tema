@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import MusteriDetay from "@/components/admin/MusteriDetay";
 
 export default async function MusteriDetayPage({ params }: { params: Promise<{ id: string }> }) {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await isAuthenticated())) redirect("/login");
   const { id } = await params;
 
   const musteri = await prisma.musteri.findUnique({

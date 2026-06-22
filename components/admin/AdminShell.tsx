@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -82,7 +82,7 @@ type ShellToast = { id: number; masaNo: number; tip: string };
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname === "/admin/login") return <>{children}</>;
+  if (pathname === "/login") return <>{children}</>;
 
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -149,7 +149,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/admin/login");
+    router.push("/login");
   };
 
   const SidebarContent = ({ isCollapsed = false }: { isCollapsed?: boolean }) => (

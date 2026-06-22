@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -13,7 +13,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email || undefined, password }),

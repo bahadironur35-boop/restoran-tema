@@ -1,9 +1,9 @@
-import { isAuthenticated } from "@/lib/auth";
+﻿import { isAuthenticated } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import PosClient from "@/components/admin/PosClient";
 
 export default async function PosPage() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await isAuthenticated())) redirect("/login");
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">POS – Sipariş Al</h1>

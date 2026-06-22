@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Globe, LogOut, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -40,7 +40,7 @@ export default function AdminHeader() {
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/admin/login");
+    router.push("/login");
   };
 
   return (
